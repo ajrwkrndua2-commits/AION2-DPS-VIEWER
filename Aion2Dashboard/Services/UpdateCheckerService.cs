@@ -45,7 +45,7 @@ public sealed class UpdateCheckerService
         {
             Timeout = TimeSpan.FromSeconds(8)
         };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("DPSVIEWER/1.0.1");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("DPSVIEWER/1.0.2");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
