@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="설정"
         Width="390"
-        Height="600"
+        Height="640"
         ResizeMode="CanResize"
         WindowStartupLocation="CenterOwner"
         Background="#10131B">
@@ -50,17 +50,43 @@
                           Content="항상 위에 표시" />
 
                 <StackPanel Margin="0,14,0,0">
-                    <TextBlock Foreground="#C0D1F4" Text="집계 시간(분)" />
+                    <TextBlock Foreground="#C0D1F4" Text="집계 시간(초)" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
-                            Text="{Binding MeterWindowMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                             Text="{Binding MeterWindowSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="최근 몇 초를 기준으로 DPS를 계산합니다. 1~180초" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="전투 초기화 시간(초)" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding CombatResetSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="전투 공백이 이 시간 이상이면 새 전투로 보고 자동 초기화를 제안합니다. 5~180초" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="검색 결과 유지 시간(초)" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding SearchResultSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="검색한 캐릭터가 DPS에 잡히지 않았을 때 상단 검색 카드에 유지되는 시간입니다. 5~180초" />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
                     <TextBlock Foreground="#C0D1F4" Text="비활성 삭제 시간(초)" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
-                            Text="{Binding ActiveDisplaySeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                             Text="{Binding ActiveDisplaySeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
@@ -91,7 +117,6 @@
                     <CheckBox Foreground="#D8E5FF"
                               IsChecked="{Binding PartyPacketLoggingEnabled, Mode=TwoWay}"
                               Content="파티 패킷 로그 수집" />
-
                     <TextBlock Margin="0,8,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
@@ -106,7 +131,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="본인 닉네임을 넣어두면 게임 중 실행해도 본인 캐릭터를 더 빨리 고정합니다." />
+                               Text="본인 닉네임을 입력하면 게임 중 실행해도 본인 캐릭터를 더 빨리 찾습니다." />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">

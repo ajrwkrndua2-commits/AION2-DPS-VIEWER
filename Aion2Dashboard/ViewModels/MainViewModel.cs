@@ -36,7 +36,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _resetHotkey = "Ctrl+F1";
     private string _fullResetHotkey = "Ctrl+R";
     private string _manualSelfName = string.Empty;
-    private int _meterWindowMinutes = 5;
+    private int _meterWindowSeconds = 300;
+    private int _combatResetSeconds = 20;
+    private int _searchResultSeconds = 30;
     private int _activeDisplaySeconds = 2;
     private bool _bossOnlyMode;
     private bool _partyPacketLoggingEnabled;
@@ -44,6 +46,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _currentTargetName = "타겟 대기 중";
     private bool _isBossTarget;
     private DpsPlayerRow? _pinnedSearchPlayer;
+    private DateTime _pinnedSearchSetUtc = DateTime.MinValue;
     private bool _isAdBannerVisible;
     private string _adBadge = "AD";
     private string _adTitle = string.Empty;
@@ -306,15 +309,42 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public int MeterWindowMinutes
+    public int MeterWindowSeconds
     {
-        get => _meterWindowMinutes;
+        get => _meterWindowSeconds;
         set
         {
-            var normalized = Math.Clamp(value, 1, 30);
-            if (SetProperty(ref _meterWindowMinutes, normalized))
+            var normalized = Math.Clamp(value, 1, 180);
+            if (SetProperty(ref _meterWindowSeconds, normalized))
             {
                 ApplyMeterOptions();
+                SaveSettings();
+            }
+        }
+    }
+
+    public int CombatResetSeconds
+    {
+        get => _combatResetSeconds;
+        set
+        {
+            var normalized = Math.Clamp(value, 5, 180);
+            if (SetProperty(ref _combatResetSeconds, normalized))
+            {
+                ApplyMeterOptions();
+                SaveSettings();
+            }
+        }
+    }
+
+    public int SearchResultSeconds
+    {
+        get => _searchResultSeconds;
+        set
+        {
+            var normalized = Math.Clamp(value, 5, 180);
+            if (SetProperty(ref _searchResultSeconds, normalized))
+            {
                 SaveSettings();
             }
         }
@@ -392,7 +422,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public DpsPlayerRow? PinnedSearchPlayer
     {
         get => _pinnedSearchPlayer;
-        set => SetProperty(ref _pinnedSearchPlayer, value);
+        set
+        {
+            if (SetProperty(ref _pinnedSearchPlayer, value))
+            {
+                _pinnedSearchSetUtc = value is null ? DateTime.MinValue : DateTime.UtcNow;
+            }
+        }
     }
 
     public Brush OverlayBrush => CreateBrush(11, 17, 28, OverlayOpacity);
@@ -530,13 +566,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var row = GetOrCreateRow(0, profile.Nickname);
+                var row = CreateProfileRow(profile);
                 ApplyProfile(row, profile);
                 PinnedSearchPlayer = row;
                 _profileCache[GetProfileKey(profile.Nickname, profile.Server)] = profile;
                 SearchKeyword = string.Empty;
                 StatusText = $"{profile.Nickname} 정보를 불러왔습니다.";
-                ReorderRows();
             });
         }
         catch (Exception ex)
@@ -655,6 +690,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             }
 
             RemoveInactiveRows(activeActorIds);
+            UpdatePinnedSearchVisibility();
             ApplyPartyHints();
             ReorderRows();
             RaisePropertyChanged(nameof(TotalPartyDps));
@@ -695,7 +731,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             ApplyMeterOptions();
             _dpsMeterService.Start(MeterServerPort);
-            StatusText = $"DPS 수집 시작. {MeterWindowMinutes}분 집계 / {MeterModeText}";
+            StatusText = $"DPS 수집 시작. {MeterWindowSeconds}초 집계 / {MeterModeText}";
             if (PartyPacketLoggingEnabled && !string.IsNullOrWhiteSpace(_dpsMeterService.PartyLogFilePath))
             {
                 StatusText = $"파티 로그 수집 중: {_dpsMeterService.PartyLogFilePath}";
@@ -732,6 +768,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         IsBossTarget = false;
         StatusText = "DPS 데이터만 초기화했습니다. 이름과 아툴 정보는 유지됩니다.";
         RaisePropertyChanged(nameof(TotalPartyDps));
+        UpdatePinnedSearchVisibility();
         ReorderRows();
     }
 
@@ -791,6 +828,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _rowsByName[name] = row;
         }
 
+        return row;
+    }
+
+    private static DpsPlayerRow CreateProfileRow(CharacterProfile profile)
+    {
+        var row = new DpsPlayerRow();
+        ApplyProfile(row, profile);
         return row;
     }
 
@@ -980,11 +1024,37 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ApplyMeterOptions()
     {
-        _dpsMeterService.MeterWindowMinutes = MeterWindowMinutes;
+        _dpsMeterService.MeterWindowSeconds = MeterWindowSeconds;
+        _dpsMeterService.CombatResetSeconds = CombatResetSeconds;
         _dpsMeterService.ActiveDisplaySeconds = ActiveDisplaySeconds;
         _dpsMeterService.BossOnlyMode = BossOnlyMode;
         _dpsMeterService.EnablePartyPacketLogging = PartyPacketLoggingEnabled;
         RaisePropertyChanged(nameof(MeterModeText));
+    }
+
+    private void UpdatePinnedSearchVisibility()
+    {
+        if (PinnedSearchPlayer is null)
+        {
+            return;
+        }
+
+        var hasMatchingLiveRow = LivePlayers.Any(row =>
+            !string.IsNullOrWhiteSpace(row.Name) &&
+            string.Equals(row.Name, PinnedSearchPlayer.Name, StringComparison.OrdinalIgnoreCase) &&
+            (string.IsNullOrWhiteSpace(PinnedSearchPlayer.Server) ||
+             string.IsNullOrWhiteSpace(row.Server) ||
+             string.Equals(row.Server, PinnedSearchPlayer.Server, StringComparison.OrdinalIgnoreCase)));
+
+        if (hasMatchingLiveRow)
+        {
+            return;
+        }
+
+        if ((DateTime.UtcNow - _pinnedSearchSetUtc).TotalSeconds >= SearchResultSeconds)
+        {
+            PinnedSearchPlayer = null;
+        }
     }
 
     private void LoadAdBanner()
@@ -1105,7 +1175,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _resetHotkey = NormalizeHotkey(settings.ResetHotkey, "Ctrl+F1");
         _fullResetHotkey = NormalizeHotkey(settings.FullResetHotkey, "Ctrl+R");
         _manualSelfName = settings.ManualSelfName?.Trim() ?? string.Empty;
-        _meterWindowMinutes = Math.Clamp(settings.MeterWindowMinutes, 1, 30);
+        _meterWindowSeconds = Math.Clamp(
+            settings.MeterWindowSeconds > 0 ? settings.MeterWindowSeconds : settings.MeterWindowMinutes * 60,
+            1,
+            180);
+        _combatResetSeconds = Math.Clamp(settings.CombatResetSeconds, 5, 180);
+        _searchResultSeconds = Math.Clamp(settings.SearchResultSeconds, 5, 180);
         _activeDisplaySeconds = Math.Clamp(settings.ActiveDisplaySeconds, 1, 10);
         _bossOnlyMode = settings.BossOnlyMode;
         _partyPacketLoggingEnabled = settings.PartyPacketLoggingEnabled;
@@ -1124,7 +1199,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ResetHotkey = ResetHotkey,
             FullResetHotkey = FullResetHotkey,
             ManualSelfName = ManualSelfName,
-            MeterWindowMinutes = MeterWindowMinutes,
+            MeterWindowSeconds = MeterWindowSeconds,
+            CombatResetSeconds = CombatResetSeconds,
+            SearchResultSeconds = SearchResultSeconds,
+            MeterWindowMinutes = Math.Max(1, MeterWindowSeconds / 60),
             ActiveDisplaySeconds = ActiveDisplaySeconds,
             BossOnlyMode = BossOnlyMode,
             PartyPacketLoggingEnabled = PartyPacketLoggingEnabled,
@@ -1190,7 +1268,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var profile = await ResolveProfileAsync(nickname, 0, serverName);
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                var row = GetOrCreateRow(0, profile.Nickname);
+                var row = CreateProfileRow(profile);
                 ApplyProfile(row, profile);
                 PinnedSearchPlayer = row;
                 _profileCache[GetProfileKey(profile.Nickname, profile.Server)] = profile;

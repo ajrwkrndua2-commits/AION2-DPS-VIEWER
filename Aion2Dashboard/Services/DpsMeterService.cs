@@ -22,7 +22,8 @@ public sealed class DpsMeterService : IDisposable
     private PacketProcessorBridge? _bridge;
     private WfpCapturer? _capturer;
     private PacketCaptureLogger? _packetLogger;
-    private int _meterWindowMinutes = 5;
+    private int _meterWindowSeconds = 300;
+    private int _combatResetSeconds = 20;
     private int _activeDisplaySeconds = 2;
     private bool _bossOnlyMode;
     private string _lastPublishedTargetKey = string.Empty;
@@ -43,10 +44,16 @@ public sealed class DpsMeterService : IDisposable
     public string? PartyLogFilePath => _packetLogger?.FilePath;
     public int PartySlotHintCount => _partySlotHintCount;
 
-    public int MeterWindowMinutes
+    public int MeterWindowSeconds
     {
-        get => _meterWindowMinutes;
-        set => _meterWindowMinutes = Math.Clamp(value, 1, 30);
+        get => _meterWindowSeconds;
+        set => _meterWindowSeconds = Math.Clamp(value, 1, 180);
+    }
+
+    public int CombatResetSeconds
+    {
+        get => _combatResetSeconds;
+        set => _combatResetSeconds = Math.Clamp(value, 5, 180);
     }
 
     public int ActiveDisplaySeconds
@@ -163,7 +170,7 @@ public sealed class DpsMeterService : IDisposable
             return Array.Empty<SkillUsageEntry>();
         }
 
-        var windowStart = DateTime.UtcNow - TimeSpan.FromMinutes(MeterWindowMinutes);
+        var windowStart = DateTime.UtcNow - TimeSpan.FromSeconds(MeterWindowSeconds);
         lock (actor.SyncRoot)
         {
             TrimEvents(actor, windowStart - MaxRetention);
@@ -306,7 +313,7 @@ public sealed class DpsMeterService : IDisposable
         RefreshPartyCandidates();
         CombatPort = _bridge?.GetCombatPort() ?? -1;
         var activeCutoff = DateTime.UtcNow - ActiveDisplayRetention;
-        var windowStart = DateTime.UtcNow - TimeSpan.FromMinutes(MeterWindowMinutes);
+        var windowStart = DateTime.UtcNow - TimeSpan.FromSeconds(MeterWindowSeconds);
 
         var snapshot = _actors
             .Where(pair => !_summonOwners.ContainsKey(pair.Key))
@@ -459,7 +466,7 @@ public sealed class DpsMeterService : IDisposable
             return;
         }
 
-        if ((nowUtc - _lastDamageUtc).TotalSeconds < 20)
+        if ((nowUtc - _lastDamageUtc).TotalSeconds < CombatResetSeconds)
         {
             return;
         }
@@ -574,7 +581,7 @@ public sealed class DpsMeterService : IDisposable
     private string BuildStatusMessage(string prefix)
     {
         var modeText = BossOnlyMode ? "보스만" : "전체";
-        return $"{prefix}. {MeterWindowMinutes}분 집계 / {modeText}";
+        return $"{prefix}. {MeterWindowSeconds}초 집계 / {modeText}";
     }
 
     private static bool IsSummonName(string name)

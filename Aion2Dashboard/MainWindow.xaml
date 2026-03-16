@@ -49,8 +49,8 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
@@ -146,35 +146,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="3" Margin="12,10,12,0" Padding="12,10" CornerRadius="14" Background="#B42A3E57" BorderBrush="#6C9FDC" BorderThickness="1">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsAdBannerVisible}" Value="False">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Border Padding="8,3" CornerRadius="9" Background="#355F9B" VerticalAlignment="Center">
-                        <TextBlock Foreground="#F4F8FF" FontSize="10" FontWeight="Bold" Text="{Binding AdBadge}" />
-                    </Border>
-                    <StackPanel Grid.Column="1" Margin="10,0,12,0">
-                        <TextBlock Foreground="White" FontSize="13" FontWeight="SemiBold" Text="{Binding AdTitle}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Margin="0,3,0,0" Foreground="#D4E4FF" FontSize="11" Text="{Binding AdDescription}" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                    <Button Grid.Column="2" MinWidth="72" Style="{StaticResource CompactAwareButton}" Command="{Binding OpenAdLinkCommand}" Content="{Binding AdButtonText}" />
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="4" Margin="12,10,12,0" Padding="10" CornerRadius="14" Background="#B6283448" BorderBrush="#5C8FD0" BorderThickness="1" MouseLeftButtonDown="PinnedSearchCard_MouseLeftButtonDown">
+            <Border Grid.Row="3" Margin="12,10,12,0" Padding="10" CornerRadius="14" Background="#B6283448" BorderBrush="#5C8FD0" BorderThickness="1" MouseLeftButtonDown="PinnedSearchCard_MouseLeftButtonDown">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Visible" />
@@ -230,7 +202,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="5" Margin="12,10,12,10" Padding="10" CornerRadius="14" Background="#B1243143" BorderBrush="#4D719D" BorderThickness="1">
+            <Border Grid.Row="4" Margin="12,10,12,10" Padding="10" CornerRadius="14" Background="#B1243143" BorderBrush="#4D719D" BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -333,6 +305,34 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="5" Margin="12,0,12,10" Padding="12,10" CornerRadius="14" Background="#B42A3E57" BorderBrush="#6C9FDC" BorderThickness="1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsAdBannerVisible}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Padding="8,3" CornerRadius="9" Background="#355F9B" VerticalAlignment="Center">
+                        <TextBlock Foreground="#F4F8FF" FontSize="10" FontWeight="Bold" Text="{Binding AdBadge}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="10,0,12,0">
+                        <TextBlock Foreground="White" FontSize="13" FontWeight="SemiBold" Text="{Binding AdTitle}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Margin="0,3,0,0" Foreground="#D4E4FF" FontSize="11" Text="{Binding AdDescription}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button Grid.Column="2" MinWidth="72" Style="{StaticResource CompactAwareButton}" Command="{Binding OpenAdLinkCommand}" Content="{Binding AdButtonText}" />
                 </Grid>
             </Border>
 
