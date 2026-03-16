@@ -155,6 +155,7 @@ public sealed class DpsMeterService : IDisposable
         }
 
         _targets.Clear();
+        _bossTargets.Clear();
         _bridge?.Reset();
         _lastDamageUtc = DateTime.MinValue;
         PublishTarget(null);
@@ -532,7 +533,12 @@ public sealed class DpsMeterService : IDisposable
 
     private bool MatchesFilter(int targetId)
     {
-        return !BossOnlyMode || _bossTargets.IsEmpty || _bossTargets.ContainsKey(targetId);
+        if (!BossOnlyMode)
+        {
+            return true;
+        }
+
+        return _targets.TryGetValue(targetId, out var target) && target.IsBoss;
     }
 
     private void RegisterTargetHit(int targetId, DateTime now)

@@ -74,6 +74,7 @@ public partial class MainWindow : Window
     {
         var window = new SettingsWindow(_viewModel) { Owner = this };
         window.ShowDialog();
+        ApplyGlobalHotkeys();
     }
 
     private void ToggleCompact_Click(object sender, RoutedEventArgs e)
@@ -229,8 +230,28 @@ public partial class MainWindow : Window
         }
 
         UnregisterGlobalHotkeys();
-        RegisterHotkey(_hwndSource.Handle, ResetHotkeyId, _viewModel.ResetHotkey);
-        RegisterHotkey(_hwndSource.Handle, FullResetHotkeyId, _viewModel.FullResetHotkey);
+        ApplyGlobalHotkeys();
+    }
+
+    private void ApplyGlobalHotkeys()
+    {
+        if (_hwndSource is null)
+        {
+            return;
+        }
+
+        var messages = new List<string>();
+        RegisterHotkey(_hwndSource.Handle, ResetHotkeyId, _viewModel.ResetHotkey, "DPS 리셋", messages);
+        RegisterHotkey(_hwndSource.Handle, FullResetHotkeyId, _viewModel.FullResetHotkey, "전체 리셋", messages);
+
+        if (messages.Count == 0)
+        {
+            _viewModel.SetStatusMessage($"전역 단축키 적용 완료: {_viewModel.ResetHotkey} / {_viewModel.FullResetHotkey}");
+        }
+        else
+        {
+            _viewModel.SetStatusMessage(string.Join(" | ", messages));
+        }
     }
 
     private void UnregisterGlobalHotkeys()
@@ -244,14 +265,18 @@ public partial class MainWindow : Window
         UnregisterHotKey(_hwndSource.Handle, FullResetHotkeyId);
     }
 
-    private static void RegisterHotkey(IntPtr handle, int id, string hotkeyText)
+    private static void RegisterHotkey(IntPtr handle, int id, string hotkeyText, string label, List<string> messages)
     {
         if (!TryParseHotkey(hotkeyText, out var modifiers, out var key))
         {
+            messages.Add($"{label} 단축키 형식 오류");
             return;
         }
 
-        RegisterHotKey(handle, id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
+        if (!RegisterHotKey(handle, id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key)))
+        {
+            messages.Add($"{label} 단축키 등록 실패");
+        }
     }
 
     private static bool TryParseHotkey(string hotkeyText, out uint modifiers, out Key key)

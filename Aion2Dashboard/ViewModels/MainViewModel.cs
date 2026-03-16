@@ -71,6 +71,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         SearchCommand = new AsyncRelayCommand(SearchAsync, CanSearch);
         RefreshServersCommand = new AsyncRelayCommand(LoadServersAsync);
+        CheckUpdateCommand = new AsyncRelayCommand(() => CheckForUpdatesImprovedAsync(showLatestMessage: true));
         ResetMeterCommand = new RelayCommand(ResetMeter);
         ResetAllCommand = new RelayCommand(ResetAll);
         OpenAdLinkCommand = new RelayCommand(OpenAdLink, () => !string.IsNullOrWhiteSpace(AdUrl));
@@ -92,6 +93,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public AsyncRelayCommand SearchCommand { get; }
     public AsyncRelayCommand RefreshServersCommand { get; }
+    public AsyncRelayCommand CheckUpdateCommand { get; }
     public RelayCommand ResetMeterCommand { get; }
     public RelayCommand ResetAllCommand { get; }
     public RelayCommand OpenAdLinkCommand { get; }
@@ -459,7 +461,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await LoadServersAsync();
         await TryLoadManualSelfProfileAsync();
         StartMeter();
-        _ = CheckForUpdatesAsync();
+        _ = CheckForUpdatesImprovedAsync();
     }
 
     public async Task CheckForUpdatesAsync(bool showLatestMessage = false)
@@ -529,6 +531,81 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         ResetMeter();
         StatusText = $"미터를 초기화했습니다. 단축키 {ResetHotkey}";
+    }
+
+    public async Task CheckForUpdatesImprovedAsync(bool showLatestMessage = false)
+    {
+        if (!AutoUpdateCheckEnabled && !showLatestMessage)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _updateCheckerService.CheckForUpdateAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = result.Message;
+            });
+
+            if (!result.IsUpdateAvailable)
+            {
+                if (showLatestMessage)
+                {
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        MessageBox.Show(
+                            $"현재 최신 버전입니다.\n버전: v{AppVersion.Current}",
+                            "업데이트 확인",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
+                }
+
+                return;
+            }
+
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var answer = MessageBox.Show(
+                    $"새 버전 {result.LatestVersion} 이 있습니다.\n현재 버전: v{AppVersion.Current}\n\n릴리즈 페이지를 열까요?",
+                    "업데이트 확인",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (answer == MessageBoxResult.Yes && !string.IsNullOrWhiteSpace(result.ReleaseUrl))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = result.ReleaseUrl,
+                        UseShellExecute = true
+                    });
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = $"업데이트 확인 실패: {ex.Message}";
+                if (showLatestMessage)
+                {
+                    MessageBox.Show(
+                        $"업데이트 확인에 실패했습니다.\n{ex.Message}",
+                        "업데이트 확인",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            });
+        }
+    }
+
+    public void SetStatusMessage(string message)
+    {
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            StatusText = message;
+        }
     }
 
     public void TriggerFullResetHotkey()
