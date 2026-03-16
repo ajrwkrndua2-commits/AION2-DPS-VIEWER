@@ -18,4 +18,5 @@ public sealed class OverlaySettings
     public bool BossOnlyMode { get; set; }
     public bool PartyPacketLoggingEnabled { get; set; }
     public bool CompactMode { get; set; }
+    public bool AutoUpdateCheckEnabled { get; set; } = true;
 }
