@@ -53,14 +53,14 @@
                     <TextBlock Foreground="#C0D1F4" Text="집계 시간(분)" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
-                             Text="{Binding MeterWindowMinutes, Mode=TwoWay}" />
+                            Text="{Binding MeterWindowMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
                     <TextBlock Foreground="#C0D1F4" Text="비활성 삭제 시간(초)" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
-                             Text="{Binding ActiveDisplaySeconds, Mode=TwoWay}" />
+                            Text="{Binding ActiveDisplaySeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
@@ -131,11 +131,17 @@
                                Text="예: Ctrl+R, Ctrl+Shift+R" />
                 </StackPanel>
 
-                <Button Margin="0,18,0,0"
-                        Width="90"
-                        HorizontalAlignment="Right"
-                        Click="Close_Click"
-                        Content="닫기" />
+                <StackPanel Margin="0,18,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Width="90"
+                            Margin="0,0,8,0"
+                            Click="Save_Click"
+                            Content="저장" />
+                    <Button Width="90"
+                            Click="Close_Click"
+                            Content="닫기" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Border>
