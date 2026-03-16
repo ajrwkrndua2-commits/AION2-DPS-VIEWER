@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using Aion2Dashboard.Models;
@@ -90,6 +91,12 @@ public partial class MainWindow : Window
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        Width = Math.Max(MinWidth, Width + e.HorizontalChange);
+        Height = Math.Max(MinHeight, Height + e.VerticalChange);
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

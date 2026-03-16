@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:Aion2Dashboard.Models"
+        xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="DPSVIEWER"
         Width="760"
@@ -12,7 +13,7 @@
         MinHeight="520"
         AllowsTransparency="True"
         WindowStyle="None"
-        ResizeMode="CanResizeWithGrip"
+        ResizeMode="CanResize"
         Background="Transparent"
         Topmost="{Binding IsTopMost}"
         Opacity="{Binding WindowOpacityValue}">
@@ -78,7 +79,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V1.0.6">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V1.0.7">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
@@ -368,24 +369,31 @@
             </Border>
             <Border HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
-                    Margin="0,0,12,12"
-                    Padding="4"
-                    CornerRadius="10"
-                    Background="#28405C"
-                    BorderBrush="#6A98D2"
+                    Margin="0,0,14,14"
+                    Padding="6,4"
+                    CornerRadius="12"
+                    Background="#365A85"
+                    BorderBrush="#9DCCFF"
                     BorderThickness="1"
-                    Cursor="SizeNWSE">
-                <Grid Width="26" Height="26">
-                    <ResizeGrip HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                Margin="2"
-                                Background="Transparent" />
-                    <Path Data="M7,20 L20,7 M11,20 L20,11 M15,20 L20,15"
-                          Stroke="#D7E8FF"
-                          StrokeThickness="1.2"
-                          StrokeStartLineCap="Round"
-                          StrokeEndLineCap="Round" />
-                </Grid>
+                    Opacity="0.98">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0,0,6,0"
+                               VerticalAlignment="Center"
+                               Foreground="#EAF4FF"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Text="크기 조절" />
+                    <Grid Width="26" Height="26">
+                        <primitives:Thumb DragDelta="ResizeThumb_DragDelta"
+                                          Cursor="SizeNWSE"
+                                          Background="Transparent" />
+                        <Path Data="M7,20 L20,7 M11,20 L20,11 M15,20 L20,15"
+                              Stroke="#EAF4FF"
+                              StrokeThickness="1.8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" />
+                    </Grid>
+                </StackPanel>
             </Border>
         </Grid>
     </Border>
