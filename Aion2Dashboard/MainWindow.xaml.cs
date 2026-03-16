@@ -273,6 +273,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!IsSafeGlobalHotkey(key, modifiers))
+        {
+            messages.Add($"{label} 단축키는 Ctrl/Alt/Win 또는 F1~F24 조합만 전역 등록할 수 있습니다");
+            return;
+        }
+
         if (!RegisterHotKey(handle, id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key)))
         {
             messages.Add($"{label} 단축키 등록 실패");
@@ -321,6 +327,17 @@ public partial class MainWindow : Window
         }
 
         return modifiers != 0 || key != Key.None;
+    }
+
+    private static bool IsSafeGlobalHotkey(Key key, uint modifiers)
+    {
+        var hasSafeModifier = (modifiers & 0x0001) != 0 || (modifiers & 0x0002) != 0 || (modifiers & 0x0008) != 0;
+        return hasSafeModifier || IsFunctionKey(key);
+    }
+
+    private static bool IsFunctionKey(Key key)
+    {
+        return key >= Key.F1 && key <= Key.F24;
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

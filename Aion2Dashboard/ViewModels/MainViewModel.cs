@@ -45,6 +45,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _partyPacketLoggingEnabled;
     private bool _isCompactMode;
     private bool _autoUpdateCheckEnabled = true;
+    private bool _preserveRowsAfterMeterReset;
     private string _currentTargetName = "타겟 대기 중";
     private bool _isBossTarget;
     private DpsPlayerRow? _pinnedSearchPlayer;
@@ -806,6 +807,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             CombatPort = _dpsMeterService.CombatPort;
             var activeActorIds = entries.Select(entry => entry.ActorId).Where(id => id > 0).ToHashSet();
+            if (entries.Count > 0)
+            {
+                _preserveRowsAfterMeterReset = false;
+            }
 
             foreach (var row in LivePlayers)
             {
@@ -845,7 +850,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 TryQueueProfileLookup(row);
             }
 
-            RemoveInactiveRows(activeActorIds);
+            if (!_preserveRowsAfterMeterReset || activeActorIds.Count > 0)
+            {
+                RemoveInactiveRows(activeActorIds);
+            }
+
             UpdatePinnedSearchVisibility();
             ApplyPartyHints();
             ReorderRows();
@@ -904,6 +913,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void ResetMeter()
     {
         _dpsMeterService.Reset();
+        _preserveRowsAfterMeterReset = true;
 
         foreach (var row in LivePlayers)
         {
@@ -931,6 +941,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void ResetAll()
     {
         _dpsMeterService.Reset();
+        _preserveRowsAfterMeterReset = false;
         _rowsByActorId.Clear();
         _rowsByName.Clear();
         _profileCache.Clear();

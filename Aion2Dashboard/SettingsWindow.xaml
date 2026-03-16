@@ -153,7 +153,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="원하는 키 조합을 직접 누르세요. 예: Ctrl+F1, Ctrl+W" />
+                               Text="원하는 키 조합을 직접 누르세요. 추천: Ctrl+F1, Ctrl+Q, Alt+F1, Ctrl+Shift+F1" />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
@@ -165,7 +165,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="원하는 키 조합을 직접 누르세요. 예: Ctrl+R, Alt+F2" />
+                               Text="추천: Ctrl+R, Ctrl+F2, Alt+F2, Ctrl+Shift+F2 / Shift+문자 조합은 한글 입력을 막을 수 있어 제한됩니다." />
                 </StackPanel>
 
                 <StackPanel Margin="0,18,0,0"

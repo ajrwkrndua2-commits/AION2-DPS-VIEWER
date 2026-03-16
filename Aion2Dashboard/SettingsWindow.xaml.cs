@@ -7,6 +7,8 @@ namespace Aion2Dashboard;
 
 public partial class SettingsWindow : Window
 {
+    private const string UnsafeHotkeyMessage = "전역 단축키는 Ctrl/Alt/Win 조합 또는 F1~F24 키만 권장됩니다. Shift+문자 조합은 한글 입력을 막을 수 있습니다.";
+
     public SettingsWindow(MainViewModel viewModel)
     {
         InitializeComponent();
@@ -60,6 +62,22 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        if (!IsSafeGlobalHotkey(key, Keyboard.Modifiers))
+        {
+            if (DataContext is MainViewModel viewModel)
+            {
+                viewModel.SetStatusMessage(UnsafeHotkeyMessage);
+            }
+
+            MessageBox.Show(
+                UnsafeHotkeyMessage,
+                "단축키 설정",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            e.Handled = true;
+            return;
+        }
+
         textBox.Text = hotkeyText;
         textBox.CaretIndex = textBox.Text.Length;
         textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
@@ -98,5 +116,20 @@ public partial class SettingsWindow : Window
 
         parts.Add(keyText);
         return string.Join("+", parts);
+    }
+
+    private static bool IsSafeGlobalHotkey(Key key, ModifierKeys modifiers)
+    {
+        var hasSafeModifier =
+            modifiers.HasFlag(ModifierKeys.Control) ||
+            modifiers.HasFlag(ModifierKeys.Alt) ||
+            (modifiers & ModifierKeys.Windows) == ModifierKeys.Windows;
+
+        return hasSafeModifier || IsFunctionKey(key);
+    }
+
+    private static bool IsFunctionKey(Key key)
+    {
+        return key >= Key.F1 && key <= Key.F24;
     }
 }
