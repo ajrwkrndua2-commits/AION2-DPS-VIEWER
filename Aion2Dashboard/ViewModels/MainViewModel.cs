@@ -15,6 +15,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly DpsMeterService _dpsMeterService;
     private readonly OverlaySettingsStore _settingsStore;
     private readonly AdBannerService _adBannerService;
+    private readonly UpdateCheckerService _updateCheckerService;
     private readonly bool _isDistributionBuild;
     private readonly Dictionary<int, DpsPlayerRow> _rowsByActorId = new();
     private readonly Dictionary<string, DpsPlayerRow> _rowsByName = new(StringComparer.OrdinalIgnoreCase);
@@ -43,6 +44,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _bossOnlyMode;
     private bool _partyPacketLoggingEnabled;
     private bool _isCompactMode;
+    private bool _autoUpdateCheckEnabled = true;
     private string _currentTargetName = "타겟 대기 중";
     private bool _isBossTarget;
     private DpsPlayerRow? _pinnedSearchPlayer;
@@ -64,6 +66,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _dpsMeterService = dpsMeterService;
         _settingsStore = settingsStore;
         _adBannerService = new AdBannerService();
+        _updateCheckerService = new UpdateCheckerService();
         _isDistributionBuild = isDistributionBuild;
 
         SearchCommand = new AsyncRelayCommand(SearchAsync, CanSearch);
@@ -314,7 +317,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _meterWindowSeconds;
         set
         {
-            var normalized = Math.Clamp(value, 1, 180);
+            var normalized = Math.Clamp(value, 1, 300);
             if (SetProperty(ref _meterWindowSeconds, normalized))
             {
                 ApplyMeterOptions();
@@ -355,7 +358,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _activeDisplaySeconds;
         set
         {
-            var normalized = Math.Clamp(value, 1, 10);
+            var normalized = Math.Clamp(value, 1, 30);
             if (SetProperty(ref _activeDisplaySeconds, normalized))
             {
                 ApplyMeterOptions();
@@ -404,6 +407,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool AutoUpdateCheckEnabled
+    {
+        get => _autoUpdateCheckEnabled;
+        set
+        {
+            if (SetProperty(ref _autoUpdateCheckEnabled, value))
+            {
+                SaveSettings();
+            }
+        }
+    }
+
     public string ManualSelfName
     {
         get => _manualSelfName;
@@ -444,6 +459,70 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await LoadServersAsync();
         await TryLoadManualSelfProfileAsync();
         StartMeter();
+        _ = CheckForUpdatesAsync();
+    }
+
+    public async Task CheckForUpdatesAsync(bool showLatestMessage = false)
+    {
+        if (!AutoUpdateCheckEnabled && !showLatestMessage)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _updateCheckerService.CheckForUpdateAsync();
+            if (result.IsUpdateAvailable)
+            {
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText = $"새 버전 {result.LatestVersion} 이 있습니다.";
+                    var answer = MessageBox.Show(
+                        $"새 버전 {result.LatestVersion} 이 있습니다.\n현재 버전: v{AppVersion.Current}\n\n릴리즈 페이지를 열까요?",
+                        "업데이트 확인",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Information);
+
+                    if (answer == MessageBoxResult.Yes && !string.IsNullOrWhiteSpace(result.ReleaseUrl))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = result.ReleaseUrl,
+                            UseShellExecute = true
+                        });
+                    }
+                });
+                return;
+            }
+
+            if (showLatestMessage)
+            {
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText = $"최신 버전입니다. v{AppVersion.Current}";
+                    MessageBox.Show(
+                        $"현재 최신 버전입니다.\n버전: v{AppVersion.Current}",
+                        "업데이트 확인",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            if (showLatestMessage)
+            {
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText = $"업데이트 확인 실패: {ex.Message}";
+                    MessageBox.Show(
+                        $"업데이트 확인에 실패했습니다.\n{ex.Message}",
+                        "업데이트 확인",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                });
+            }
+        }
     }
 
     public void TriggerResetHotkey()
@@ -1178,13 +1257,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _meterWindowSeconds = Math.Clamp(
             settings.MeterWindowSeconds > 0 ? settings.MeterWindowSeconds : settings.MeterWindowMinutes * 60,
             1,
-            180);
+            300);
         _combatResetSeconds = Math.Clamp(settings.CombatResetSeconds, 5, 180);
         _searchResultSeconds = Math.Clamp(settings.SearchResultSeconds, 5, 180);
-        _activeDisplaySeconds = Math.Clamp(settings.ActiveDisplaySeconds, 1, 10);
+        _activeDisplaySeconds = Math.Clamp(settings.ActiveDisplaySeconds, 1, 30);
         _bossOnlyMode = settings.BossOnlyMode;
         _partyPacketLoggingEnabled = settings.PartyPacketLoggingEnabled;
         _isCompactMode = settings.CompactMode;
+        _autoUpdateCheckEnabled = settings.AutoUpdateCheckEnabled;
     }
 
     private void SaveSettings()
@@ -1206,7 +1286,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ActiveDisplaySeconds = ActiveDisplaySeconds,
             BossOnlyMode = BossOnlyMode,
             PartyPacketLoggingEnabled = PartyPacketLoggingEnabled,
-            CompactMode = IsCompactMode
+            CompactMode = IsCompactMode,
+            AutoUpdateCheckEnabled = AutoUpdateCheckEnabled
         });
     }
 

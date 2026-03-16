@@ -57,7 +57,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="최근 몇 초를 기준으로 DPS를 계산합니다. 1~180초" />
+                               Text="최근 몇 초를 기준으로 DPS를 계산합니다. 1~300초" />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
@@ -90,7 +90,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="이 시간 동안 딜이 없으면 자동 수집 캐릭터를 목록에서 숨깁니다. 1~10초" />
+                               Text="이 시간 동안 딜이 없으면 자동 수집 캐릭터를 목록에서 숨깁니다. 1~30초" />
                 </StackPanel>
 
                 <CheckBox Margin="0,14,0,0"
@@ -102,6 +102,16 @@
                            Foreground="#8EA8D8"
                            FontSize="11"
                            Text="체크 해제 시 전체 DPS를 표시합니다." />
+
+                <CheckBox Margin="0,14,0,0"
+                          Foreground="#D8E5FF"
+                          IsChecked="{Binding AutoUpdateCheckEnabled, Mode=TwoWay}"
+                          Content="시작 시 자동 업데이트 확인" />
+
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="#8EA8D8"
+                           FontSize="11"
+                           Text="GitHub 릴리즈 최신 버전을 확인하고, 새 버전이 있으면 안내합니다." />
 
                 <StackPanel Margin="0,14,0,0">
                     <StackPanel.Style>

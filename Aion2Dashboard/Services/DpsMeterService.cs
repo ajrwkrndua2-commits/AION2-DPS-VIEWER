@@ -47,7 +47,7 @@ public sealed class DpsMeterService : IDisposable
     public int MeterWindowSeconds
     {
         get => _meterWindowSeconds;
-        set => _meterWindowSeconds = Math.Clamp(value, 1, 180);
+        set => _meterWindowSeconds = Math.Clamp(value, 1, 300);
     }
 
     public int CombatResetSeconds
@@ -59,7 +59,7 @@ public sealed class DpsMeterService : IDisposable
     public int ActiveDisplaySeconds
     {
         get => _activeDisplaySeconds;
-        set => _activeDisplaySeconds = Math.Clamp(value, 1, 10);
+        set => _activeDisplaySeconds = Math.Clamp(value, 1, 30);
     }
 
     public bool BossOnlyMode
