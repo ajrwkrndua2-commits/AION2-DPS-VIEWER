@@ -1,0 +1,28 @@
+# dotnet / visual studio
+bin/
+obj/
+.vs/
+
+# local tool/cache folders
+.appdata/
+.dotnet-home/
+.nuget-packages/
+
+# local build outputs
+_buildcheck*/
+dist-dev/
+dist-release/
+
+# packaged archives
+*.zip
+
+# user/runtime files
+*.user
+*.suo
+*.pdb
+
+# app runtime settings/logs
+overlay-settings.json
+logs/
+unknown-skills.log
+

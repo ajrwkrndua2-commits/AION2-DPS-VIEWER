@@ -1,0 +1,196 @@
+<Window x:Class="Aion2Dashboard.CharacterDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="캐릭터 상세"
+        Width="920"
+        Height="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="#10151F">
+    <Border Margin="12"
+            Padding="16"
+            Background="#182030"
+            CornerRadius="16"
+            BorderBrush="#2E4A78"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Orientation="Horizontal">
+                <Border Width="46"
+                        Height="46"
+                        Background="#21355B"
+                        CornerRadius="23"
+                        BorderBrush="#5F94E8"
+                        BorderThickness="1">
+                    <Image Source="{Binding JobImageUrl}" Stretch="Uniform" Margin="6" />
+                </Border>
+                <StackPanel Margin="12,0,0,0">
+                    <TextBlock Foreground="White" FontSize="22" FontWeight="Bold" Text="{Binding Nickname}" />
+                    <TextBlock Margin="0,4,0,0" Foreground="#9DB6DF" Text="{Binding Server}" />
+                </StackPanel>
+            </StackPanel>
+
+            <WrapPanel Grid.Row="1" Margin="0,14,0,0">
+                <Border Margin="0,0,8,8" Padding="8,4" CornerRadius="8" Background="#50305E">
+                    <TextBlock Foreground="#E7B8FF" Text="{Binding Job}" />
+                </Border>
+                <Border Margin="0,0,8,8" Padding="8,4" CornerRadius="8" Background="#1E3A30">
+                    <TextBlock Foreground="#9EF0C2" Text="{Binding Guild}" />
+                </Border>
+                <Border Margin="0,0,8,8" Padding="8,4" CornerRadius="8" Background="#22314D">
+                    <TextBlock Foreground="#AFC9FF" Text="{Binding Level, StringFormat=Lv.{0}}" />
+                </Border>
+                <Border Margin="0,0,8,8" Padding="8,4" CornerRadius="8" Background="#54422B">
+                    <TextBlock Foreground="#F6D277" Text="{Binding Race}" />
+                </Border>
+            </WrapPanel>
+
+            <Grid Grid.Row="2" Margin="0,6,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Margin="0,0,6,0" Padding="10" Background="#111927" CornerRadius="10">
+                    <StackPanel>
+                        <TextBlock Foreground="#7E96BC" FontSize="11" Text="아툴 점수" />
+                        <TextBlock Foreground="#FFD96A" FontSize="24" FontWeight="Bold" Text="{Binding CombatScore, StringFormat=N0}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Margin="6,0,0,0" Padding="10" Background="#111927" CornerRadius="10">
+                    <StackPanel>
+                        <TextBlock Foreground="#7E96BC" FontSize="11" Text="전투력" />
+                        <TextBlock Foreground="#8FD0FF" FontSize="24" FontWeight="Bold" Text="{Binding CombatPower, StringFormat=N0}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Foreground="#F7D9A3" FontWeight="SemiBold" Text="주요 타이틀" />
+                        <ItemsControl Margin="0,8,0,14" ItemsSource="{Binding MajorTitles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,6,6" Padding="8,4" CornerRadius="8" Background="#3B2D1F">
+                                        <TextBlock Foreground="#F7D9A3" Text="{Binding}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Foreground="#88F0BE" FontWeight="SemiBold" Text="주요 스티그마" />
+                        <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding MajorStigmas}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,6,6" Padding="8,4" CornerRadius="8" Background="#203A2F">
+                                        <TextBlock Foreground="#88F0BE" Text="{Binding}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Column="2" Padding="12" Background="#111927" CornerRadius="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Foreground="#8EA8D8" FontWeight="SemiBold" Text="스킬 정보" />
+
+                        <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding SkillUsages}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,10"
+                                                Padding="10"
+                                                Background="#1C2433"
+                                                BorderBrush="#223552"
+                                                BorderThickness="1"
+                                                CornerRadius="10">
+                                            <StackPanel>
+                                                <DockPanel LastChildFill="True">
+                                                    <TextBlock DockPanel.Dock="Left"
+                                                               Foreground="White"
+                                                               FontWeight="SemiBold"
+                                                               Text="{Binding SkillName}" />
+                                                    <TextBlock DockPanel.Dock="Right"
+                                                               Foreground="#FFD96A"
+                                                               FontSize="11"
+                                                               Text="{Binding DamageShare, StringFormat={}{0:P0}}" />
+                                                </DockPanel>
+
+                                                <Grid Margin="0,8,0,0">
+                                                    <ProgressBar Height="14"
+                                                                 Minimum="0"
+                                                                 Maximum="1"
+                                                                 Value="{Binding DamageRatio}"
+                                                                 Background="#0E1522"
+                                                                 Foreground="#59A9FF"
+                                                                 BorderThickness="0" />
+                                                </Grid>
+
+                                                <WrapPanel Margin="0,8,0,0">
+                                                    <TextBlock Margin="0,0,12,0"
+                                                               Foreground="#8EA8D8"
+                                                               FontSize="11"
+                                                               Text="{Binding HitCount, StringFormat=횟수 {0}}" />
+                                                    <TextBlock Margin="0,0,12,0"
+                                                               Foreground="#FFD96A"
+                                                               FontSize="11"
+                                                               Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" />
+                                                    <TextBlock Margin="0,0,12,0"
+                                                               Foreground="#9EF0C2"
+                                                               FontSize="11"
+                                                               Text="{Binding CritRate, StringFormat=치명 {0:P0}}" />
+                                                    <TextBlock Foreground="#AFC9FF"
+                                                               FontSize="11"
+                                                               Text="{Binding MaxHit, StringFormat=최대 {0:N0}}" />
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Button Grid.Row="4"
+                    Width="88"
+                    Height="32"
+                    Margin="0,14,0,0"
+                    HorizontalAlignment="Right"
+                    Click="Close_Click"
+                    Content="닫기" />
+        </Grid>
+    </Border>
+</Window>

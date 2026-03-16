@@ -1,0 +1,8 @@
+{
+  "Enabled": true,
+  "Badge": "AD",
+  "Title": "DPSVIEWER banner slot",
+  "Description": "Edit this file to change the banner text and link.",
+  "ButtonText": "Open",
+  "Url": "https://example.com"
+}

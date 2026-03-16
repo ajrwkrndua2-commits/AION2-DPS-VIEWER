@@ -1,0 +1,142 @@
+<Window x:Class="Aion2Dashboard.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="설정"
+        Width="390"
+        Height="600"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#10131B">
+    <Border Margin="14"
+            Padding="0"
+            Background="#171D28"
+            BorderBrush="#3B5D99"
+            BorderThickness="1"
+            CornerRadius="14">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="18">
+                <TextBlock FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           Text="오버레이 설정" />
+
+                <StackPanel Margin="0,20,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="창 전체 투명도" />
+                    <Slider Margin="0,6,0,0"
+                            Minimum="0.55"
+                            Maximum="1.0"
+                            Value="{Binding WindowOpacityValue, Mode=TwoWay}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="배경 투명도" />
+                    <Slider Margin="0,6,0,0"
+                            Minimum="0.35"
+                            Maximum="1.0"
+                            Value="{Binding OverlayOpacity, Mode=TwoWay}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="카드 투명도" />
+                    <Slider Margin="0,6,0,0"
+                            Minimum="0.35"
+                            Maximum="1.0"
+                            Value="{Binding CardOpacity, Mode=TwoWay}" />
+                </StackPanel>
+
+                <CheckBox Margin="0,18,0,0"
+                          Foreground="#D8E5FF"
+                          IsChecked="{Binding IsTopMost, Mode=TwoWay}"
+                          Content="항상 위에 표시" />
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="집계 시간(분)" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding MeterWindowMinutes, Mode=TwoWay}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="비활성 삭제 시간(초)" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding ActiveDisplaySeconds, Mode=TwoWay}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="이 시간 동안 딜이 없으면 자동 수집 캐릭터를 목록에서 숨깁니다. 1~10초" />
+                </StackPanel>
+
+                <CheckBox Margin="0,14,0,0"
+                          Foreground="#D8E5FF"
+                          IsChecked="{Binding BossOnlyMode, Mode=TwoWay}"
+                          Content="보스 몬스터 딜만 집계" />
+
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="#8EA8D8"
+                           FontSize="11"
+                           Text="체크 해제 시 전체 DPS를 표시합니다." />
+
+                <StackPanel Margin="0,14,0,0">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ShowPartyLoggingSetting}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <CheckBox Foreground="#D8E5FF"
+                              IsChecked="{Binding PartyPacketLoggingEnabled, Mode=TwoWay}"
+                              Content="파티 패킷 로그 수집" />
+
+                    <TextBlock Margin="0,8,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="파티 초대와 수락 패턴 분석용 로그를 logs 폴더에 저장합니다." />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="본인 닉네임 힌트" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding ManualSelfName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="본인 닉네임을 넣어두면 게임 중 실행해도 본인 캐릭터를 더 빨리 고정합니다." />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="DPS 리셋 단축키" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding ResetHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="예: Ctrl+F1, Ctrl+Shift+F1" />
+                </StackPanel>
+
+                <StackPanel Margin="0,14,0,0">
+                    <TextBlock Foreground="#C0D1F4" Text="전체 리셋 단축키" />
+                    <TextBox Margin="0,6,0,0"
+                             Height="28"
+                             Text="{Binding FullResetHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#8EA8D8"
+                               FontSize="11"
+                               Text="예: Ctrl+R, Ctrl+Shift+R" />
+                </StackPanel>
+
+                <Button Margin="0,18,0,0"
+                        Width="90"
+                        HorizontalAlignment="Right"
+                        Click="Close_Click"
+                        Content="닫기" />
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</Window>

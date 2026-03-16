@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Aion2Dashboard</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpPcap" Version="6.3.0" />
+    <PackageReference Include="WindivertDotnet" Version="1.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="PacketProcessor.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\skills_ko.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>skills_ko.json</Link>
+    </None>
+    <None Include="Assets\mobs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>mobs.json</Link>
+    </None>
+    <None Include="Assets\ad-banner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ad-banner.json</Link>
+    </None>
+    <None Include="Assets\WinDivert\WinDivert-2.2.2-A\x64\WinDivert.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>WinDivert.dll</Link>
+    </None>
+    <None Include="Assets\WinDivert\WinDivert-2.2.2-A\x64\WinDivert64.sys">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>WinDivert64.sys</Link>
+    </None>
+    <Resource Include="Assets\a2viewer-normal.png" />
+  </ItemGroup>
+</Project>
