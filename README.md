@@ -4,6 +4,26 @@
 
 `DPSVIEWER`는 실시간 전투 정보를 표시하고, 감지된 캐릭터의 아툴 정보와 상세 스킬 정보를 함께 확인할 수 있게 만든 WPF 데스크톱 앱입니다.
 
+## 현재 버전
+
+- `v1.0.1`
+- 기준 날짜: `2026-03-17`
+
+## v1.0.1 수정 사항
+
+- 살성 `환영분신 / 환영 분신` 계열 본체 딜 합산 보정
+- 검색 캐릭터와 실시간 DPS 리스트 분리 유지
+- 설정창 저장 버튼 추가
+- 시간 설정 일부 초 단위 조정
+- 광고 배너 하단 배치 정리
+
+## 버전 정책
+
+- 큰 구조 변경: `1.1.0`, `1.2.0`
+- 버그 수정 / 소규모 보정: `1.0.2`, `1.0.3`
+
+즉 큰 틀이 바뀌지 않는 이상 뒤 번호만 올리는 방식으로 관리합니다.
+
 ## 주요 기능
 
 - 실시간 DPS 집계
@@ -25,10 +45,6 @@
 
 설치 후 프로그램은 `관리자 권한`으로 실행하는 것을 권장합니다.
 
-참고:
-- Npcap 공식 사이트는 Windows용 패킷 캡처 라이브러리/드라이버라고 안내합니다.
-- 출처: [Npcap 공식 페이지](https://npcap.com/)
-
 ### 2. .NET Desktop Runtime 8 설치
 
 배포 실행 파일은 `.NET Desktop Runtime 8`이 필요합니다.
@@ -36,13 +52,10 @@
 - 공식 페이지: [.NET 8 다운로드](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - 직접 설치: [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
 
-Microsoft 공식 페이지에서도 데스크톱 앱 실행 시 `.NET Desktop Runtime` 설치를 안내합니다.
-- 출처: [.NET Runtime 공식 페이지](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
-
 ## 실행 파일
 
-- 개발용 실행본: `dist-dev-fixed`
-- 배포용 실행본: `dist-release-fixed`
+- 개발용 실행본: `dist-dev-1.0.1`
+- 배포용 실행본: `dist-release-1.0.1`
 
 ## 개발용 / 배포용 차이
 
@@ -61,25 +74,25 @@ Microsoft 공식 페이지에서도 데스크톱 앱 실행 시 `.NET Desktop Ru
 관리자 권한으로 실행하는 것을 권장합니다.
 
 ```powershell
-.\dist-release-fixed\Aion2Dashboard.exe
+.\dist-release-1.0.1\Aion2Dashboard.exe
 ```
 
 또는 개발용:
 
 ```powershell
-.\dist-dev-fixed\Aion2Dashboard.exe
+.\dist-dev-1.0.1\Aion2Dashboard.exe
 ```
 
 ## 빌드
 
 ```powershell
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-fixed
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-fixed -p:DefineConstants=DISTRIBUTION
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-1.0.1
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-1.0.1 -p:DefineConstants=DISTRIBUTION
 ```
 
 ## 배포 파일
 
-GitHub 코드 저장소에는 소스코드만 올리고, 실행 파일은 `Releases`에 업로드하는 방식을 권장합니다.
+GitHub 저장소에는 소스코드를 올리고, 실행 파일은 `Releases`에 올리는 방식을 권장합니다.
 
 - 배포용 zip: `DPSVIEWER-release.zip`
 - 개발용 zip: `DPSVIEWER-dev-final.zip`
