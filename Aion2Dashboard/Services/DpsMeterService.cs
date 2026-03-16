@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
@@ -83,12 +83,12 @@ public sealed class DpsMeterService : IDisposable
 
         if (!IsAdministrator())
         {
-            throw new InvalidOperationException("관리자 권한으로 실행해야 DPS 패킷 수집이 동작합니다.");
+            throw new InvalidOperationException("愿由ъ옄 沅뚰븳?쇰줈 ?ㅽ뻾?댁빞 DPS ?⑦궥 ?섏쭛???숈옉?⑸땲??");
         }
 
         if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "PacketProcessor.dll")))
         {
-            throw new FileNotFoundException("PacketProcessor.dll을 찾을 수 없습니다.");
+            throw new FileNotFoundException("PacketProcessor.dll??李얠쓣 ???놁뒿?덈떎.");
         }
 
         _bridge = new PacketProcessorBridge(serverPort);
@@ -111,15 +111,15 @@ public sealed class DpsMeterService : IDisposable
             _bridge = null;
             _packetLogger?.Dispose();
             _packetLogger = null;
-            throw new InvalidOperationException($"WinDivert 시작 실패: {ex.Message}", ex);
+            throw new InvalidOperationException($"WinDivert ?쒖옉 ?ㅽ뙣: {ex.Message}", ex);
         }
 
         IsRunning = true;
         _snapshotTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
 
         var prefix = EnablePartyPacketLogging && !string.IsNullOrWhiteSpace(PartyLogFilePath)
-            ? $"DPS 자동 수집 시작 / 파티 로그 저장: {PartyLogFilePath}"
-            : "DPS 자동 수집 시작";
+            ? $"DPS ?먮룞 ?섏쭛 ?쒖옉 / ?뚰떚 濡쒓렇 ??? {PartyLogFilePath}"
+            : "DPS ?먮룞 ?섏쭛 ?쒖옉";
         StatusChanged?.Invoke(this, BuildStatusMessage(prefix));
     }
 
@@ -140,7 +140,7 @@ public sealed class DpsMeterService : IDisposable
         IsRunning = false;
         CombatPort = -1;
         _lastPublishedTargetKey = string.Empty;
-        StatusChanged?.Invoke(this, "DPS 수집을 중지했습니다.");
+        StatusChanged?.Invoke(this, "DPS ?섏쭛??以묒??덉뒿?덈떎.");
     }
 
     public void Reset()
@@ -159,7 +159,7 @@ public sealed class DpsMeterService : IDisposable
         _lastDamageUtc = DateTime.MinValue;
         PublishTarget(null);
         PublishSnapshot();
-        StatusChanged?.Invoke(this, BuildStatusMessage("DPS 데이터를 초기화했습니다."));
+        StatusChanged?.Invoke(this, BuildStatusMessage("DPS ?곗씠?곕? 珥덇린?뷀뻽?듬땲??"));
     }
 
     public IReadOnlyList<SkillUsageEntry> GetSkillUsage(int actorId, string? name = null)
@@ -490,7 +490,7 @@ public sealed class DpsMeterService : IDisposable
         }
 
         _lastAutoResetSuggestUtc = nowUtc;
-        ResetSuggested?.Invoke(this, "긴 공백 뒤 새 전투가 감지되어 전체 리셋을 진행했습니다.");
+        ResetSuggested?.Invoke(this, "湲?怨듬갚 ?????꾪닾媛 媛먯??섏뼱 ?꾩껜 由ъ뀑??吏꾪뻾?덉뒿?덈떎.");
     }
 
     private TimeSpan ActiveDisplayRetention => TimeSpan.FromSeconds(ActiveDisplaySeconds);
@@ -592,7 +592,9 @@ public sealed class DpsMeterService : IDisposable
         }
 
         return name.StartsWith("소환:", StringComparison.Ordinal)
-            || name.StartsWith("소환 :", StringComparison.Ordinal);
+            || name.StartsWith("소환 :", StringComparison.Ordinal)
+            || name.Contains("환영분신", StringComparison.Ordinal)
+            || name.Contains("환영 분신", StringComparison.Ordinal);
     }
 
     private static void TrimEvents(ActorRuntime actor, DateTime cutoff)
