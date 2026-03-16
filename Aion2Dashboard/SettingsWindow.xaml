@@ -148,22 +148,24 @@
                     <TextBlock Foreground="#C0D1F4" Text="DPS 리셋 단축키" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
+                             PreviewKeyDown="HotkeyTextBox_PreviewKeyDown"
                              Text="{Binding ResetHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="예: Ctrl+F1, Ctrl+Shift+F1" />
+                               Text="원하는 키 조합을 직접 누르세요. 예: Ctrl+F1, Ctrl+W" />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
                     <TextBlock Foreground="#C0D1F4" Text="전체 리셋 단축키" />
                     <TextBox Margin="0,6,0,0"
                              Height="28"
+                             PreviewKeyDown="HotkeyTextBox_PreviewKeyDown"
                              Text="{Binding FullResetHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="예: Ctrl+R, Ctrl+Shift+R" />
+                               Text="원하는 키 조합을 직접 누르세요. 예: Ctrl+R, Alt+F2" />
                 </StackPanel>
 
                 <StackPanel Margin="0,18,0,0"

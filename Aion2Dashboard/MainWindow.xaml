@@ -78,7 +78,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V1.0.4">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V1.0.5">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
@@ -364,6 +364,27 @@
                         <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + R 전체 리셋" />
                         <TextBlock Foreground="#C5D4EE" Style="{StaticResource CompactAwareText}" Text="상세 정보는 더블클릭" />
                     </WrapPanel>
+                </Grid>
+            </Border>
+            <Border HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,12,12"
+                    Padding="4"
+                    CornerRadius="10"
+                    Background="#28405C"
+                    BorderBrush="#6A98D2"
+                    BorderThickness="1"
+                    Cursor="SizeNWSE">
+                <Grid Width="26" Height="26">
+                    <ResizeGrip HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Margin="2"
+                                Background="Transparent" />
+                    <Path Data="M7,20 L20,7 M11,20 L20,11 M15,20 L20,15"
+                          Stroke="#D7E8FF"
+                          StrokeThickness="1.2"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round" />
                 </Grid>
             </Border>
         </Grid>
