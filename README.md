@@ -14,10 +14,35 @@
 - 간소화 모드
 - 투명도 / 집계 시간 / 비활성 삭제 시간 / 단축키 설정
 
+## 실행 전 준비
+
+### 1. Npcap 설치
+
+이 프로그램은 Windows 패킷 캡처 드라이버가 필요합니다.
+
+- 공식 사이트: [Npcap](https://npcap.com/)
+- 다운로드: [Npcap Download](https://npcap.com/#download)
+
+설치 후 프로그램은 `관리자 권한`으로 실행하는 것을 권장합니다.
+
+참고:
+- Npcap 공식 사이트는 Windows용 패킷 캡처 라이브러리/드라이버라고 안내합니다.
+- 출처: [Npcap 공식 페이지](https://npcap.com/)
+
+### 2. .NET Desktop Runtime 8 설치
+
+배포 실행 파일은 `.NET Desktop Runtime 8`이 필요합니다.
+
+- 공식 페이지: [.NET 8 다운로드](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- 직접 설치: [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
+
+Microsoft 공식 페이지에서도 데스크톱 앱 실행 시 `.NET Desktop Runtime` 설치를 안내합니다.
+- 출처: [.NET Runtime 공식 페이지](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
+
 ## 실행 파일
 
-- 개발용 실행본: `dist-dev`
-- 배포용 실행본: `dist-release`
+- 개발용 실행본: `dist-dev-fixed`
+- 배포용 실행본: `dist-release-fixed`
 
 ## 개발용 / 배포용 차이
 
@@ -36,21 +61,28 @@
 관리자 권한으로 실행하는 것을 권장합니다.
 
 ```powershell
-.\dist-release\Aion2Dashboard.exe
+.\dist-release-fixed\Aion2Dashboard.exe
 ```
 
 또는 개발용:
 
 ```powershell
-.\dist-dev\Aion2Dashboard.exe
+.\dist-dev-fixed\Aion2Dashboard.exe
 ```
 
 ## 빌드
 
 ```powershell
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release -p:DefineConstants=DISTRIBUTION
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-fixed
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-fixed -p:DefineConstants=DISTRIBUTION
 ```
+
+## 배포 파일
+
+GitHub 코드 저장소에는 소스코드만 올리고, 실행 파일은 `Releases`에 업로드하는 방식을 권장합니다.
+
+- 배포용 zip: `DPSVIEWER-release.zip`
+- 개발용 zip: `DPSVIEWER-dev-final.zip`
 
 ## 주의
 
