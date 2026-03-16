@@ -130,7 +130,7 @@
                     <TextBlock Margin="0,8,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="파티 초대와 수락 패턴 분석용 로그를 logs 폴더에 저장합니다." />
+                               Text="파티 초대/수락 분석용 로그를 logs 폴더에 저장합니다." />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
@@ -141,7 +141,7 @@
                     <TextBlock Margin="0,6,0,0"
                                Foreground="#8EA8D8"
                                FontSize="11"
-                               Text="본인 닉네임을 입력하면 게임 중 실행해도 본인 캐릭터를 더 빨리 찾습니다." />
+                               Text="본인 닉네임을 입력하면 게임 중 실행해도 본인 캐릭터를 먼저 찾습니다." />
                 </StackPanel>
 
                 <StackPanel Margin="0,14,0,0">
@@ -169,10 +169,6 @@
                 <StackPanel Margin="0,18,0,0"
                             Orientation="Horizontal"
                             HorizontalAlignment="Right">
-                    <Button Width="112"
-                            Margin="0,0,8,0"
-                            Command="{Binding CheckUpdateCommand}"
-                            Content="업데이트 확인" />
                     <Button Width="90"
                             Margin="0,0,8,0"
                             Click="Save_Click"
