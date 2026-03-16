@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using Aion2Dashboard.Models;
 using Aion2Dashboard.Services;
 using Aion2Dashboard.ViewModels;
@@ -9,7 +10,12 @@ namespace Aion2Dashboard;
 
 public partial class MainWindow : Window
 {
+    private const int WmHotKey = 0x0312;
+    private const int ResetHotkeyId = 0x5001;
+    private const int FullResetHotkeyId = 0x5002;
+
     private readonly MainViewModel _viewModel;
+    private HwndSource? _hwndSource;
 
     public MainWindow()
     {
@@ -23,6 +29,8 @@ public partial class MainWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         PreviewKeyDown += OnPreviewKeyDown;
+        SourceInitialized += OnSourceInitialized;
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -33,7 +41,25 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         PreviewKeyDown -= OnPreviewKeyDown;
+        SourceInitialized -= OnSourceInitialized;
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        UnregisterGlobalHotkeys();
         _viewModel.Dispose();
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        _hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+        _hwndSource?.AddHook(WndProc);
+        RegisterGlobalHotkeys();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.ResetHotkey) or nameof(MainViewModel.FullResetHotkey))
+        {
+            RegisterGlobalHotkeys();
+        }
     }
 
     private void SearchKeyword_KeyDown(object sender, KeyEventArgs e)
@@ -194,4 +220,107 @@ public partial class MainWindow : Window
 
         return e.Key == expectedKey && Keyboard.Modifiers == expectedModifiers;
     }
+
+    private void RegisterGlobalHotkeys()
+    {
+        if (_hwndSource is null)
+        {
+            return;
+        }
+
+        UnregisterGlobalHotkeys();
+        RegisterHotkey(_hwndSource.Handle, ResetHotkeyId, _viewModel.ResetHotkey);
+        RegisterHotkey(_hwndSource.Handle, FullResetHotkeyId, _viewModel.FullResetHotkey);
+    }
+
+    private void UnregisterGlobalHotkeys()
+    {
+        if (_hwndSource is null)
+        {
+            return;
+        }
+
+        UnregisterHotKey(_hwndSource.Handle, ResetHotkeyId);
+        UnregisterHotKey(_hwndSource.Handle, FullResetHotkeyId);
+    }
+
+    private static void RegisterHotkey(IntPtr handle, int id, string hotkeyText)
+    {
+        if (!TryParseHotkey(hotkeyText, out var modifiers, out var key))
+        {
+            return;
+        }
+
+        RegisterHotKey(handle, id, modifiers, (uint)KeyInterop.VirtualKeyFromKey(key));
+    }
+
+    private static bool TryParseHotkey(string hotkeyText, out uint modifiers, out Key key)
+    {
+        modifiers = 0;
+        key = Key.None;
+
+        if (string.IsNullOrWhiteSpace(hotkeyText))
+        {
+            return false;
+        }
+
+        var parts = hotkeyText.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return false;
+        }
+
+        if (!Enum.TryParse(parts[^1], true, out key))
+        {
+            return false;
+        }
+
+        foreach (var part in parts[..^1])
+        {
+            if (part.Equals("Ctrl", StringComparison.OrdinalIgnoreCase) || part.Equals("Control", StringComparison.OrdinalIgnoreCase))
+            {
+                modifiers |= 0x0002;
+            }
+            else if (part.Equals("Alt", StringComparison.OrdinalIgnoreCase))
+            {
+                modifiers |= 0x0001;
+            }
+            else if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+            {
+                modifiers |= 0x0004;
+            }
+            else if (part.Equals("Win", StringComparison.OrdinalIgnoreCase))
+            {
+                modifiers |= 0x0008;
+            }
+        }
+
+        return modifiers != 0 || key != Key.None;
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WmHotKey)
+        {
+            switch (wParam.ToInt32())
+            {
+                case ResetHotkeyId:
+                    _viewModel.TriggerResetHotkey();
+                    handled = true;
+                    break;
+                case FullResetHotkeyId:
+                    _viewModel.TriggerFullResetHotkey();
+                    handled = true;
+                    break;
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 }
