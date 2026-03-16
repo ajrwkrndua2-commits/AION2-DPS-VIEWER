@@ -79,7 +79,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V1.0.8">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V2.0.3">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
