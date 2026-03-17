@@ -6,14 +6,15 @@
 
 ## 현재 버전
 
-- `v3.1.3`
+- `v3.1.6`
 - 기준 날짜: `2026-03-17`
 
-## v3.1.3 수정 사항
+## v3.1.6 수정 사항
 
-- 보스 HP 표시를 `스폰 HP + 누적 피해` 기준으로 보강
-- 보스 HP를 아직 못 읽은 경우 `HP 추적 중 / 누적 피해` 안내 표시 추가
-- 버전 `v3.1.3` 반영
+- 전투 기록 저장을 약 1.5초 지연해 이름 보정 시간을 추가
+- 전투 기록 저장 직전에 현재 실시간 목록 캐시를 다시 적용하도록 유지
+- 전투 기록 보관 시간 기본값 30분 유지
+- 버전 `v3.1.6` 반영
 
 ## 주요 기능
 
@@ -46,36 +47,36 @@
 
 ## 실행 파일
 
-- 개발용 실행본: `dist-dev-3.1.3`
-- 배포용 실행본: `dist-release-3.1.3`
+- 개발용 실행본: `dist-dev-3.1.6`
+- 배포용 실행본: `dist-release-3.1.6`
 
 ## 실행 방법
 
 관리자 권한으로 실행하는 것을 권장합니다.
 
 ```powershell
-.\dist-release-3.1.3\Aion2Dashboard.exe
+.\dist-release-3.1.6\Aion2Dashboard.exe
 ```
 
 또는 개발용:
 
 ```powershell
-.\dist-dev-3.1.3\Aion2Dashboard.exe
+.\dist-dev-3.1.6\Aion2Dashboard.exe
 ```
 
 ## 빌드
 
 ```powershell
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-3.1.3
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-3.1.3 -p:DefineConstants=DISTRIBUTION
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-3.1.6
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-3.1.6 -p:DefineConstants=DISTRIBUTION
 ```
 
 ## 배포 파일
 
 GitHub 저장소에는 소스코드를 올리고, 실행 파일은 `Releases`에 올리는 방식을 권장합니다.
 
-- 배포용 zip: `DPSVIEWER-release-3.1.3.zip`
-- 개발용 zip: `DPSVIEWER-dev-3.1.3.zip`
+- 배포용 zip: `DPSVIEWER-release-3.1.6.zip`
+- 개발용 zip: `DPSVIEWER-dev-3.1.6.zip`
 
 ## 주의
 

@@ -65,6 +65,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _adButtonText = "열기";
     private string _adUrl = string.Empty;
     private string _lastSavedCombatRecordKey = string.Empty;
+    private const int CombatRecordSaveDelayMilliseconds = 1500;
 
     public MainViewModel(
         AtoolApiClient atoolApiClient,
@@ -1449,7 +1450,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        EnrichCombatRecord(record);
         var recordKey = $"{record.EndedAtUtc.Ticks}:{record.TotalDamage}:{record.TargetName}:{reason}";
         if (string.Equals(_lastSavedCombatRecordKey, recordKey, StringComparison.Ordinal))
         {
@@ -1457,19 +1457,55 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         _lastSavedCombatRecordKey = recordKey;
+        var rowSnapshots = _rowsByActorId.ToDictionary(
+            pair => pair.Key,
+            pair => ParticipantSnapshot.FromRow(pair.Value));
+        var currentTargetNameSnapshot = CurrentTargetName;
+        _ = SaveCombatRecordAsync(
+            record,
+            reason,
+            rowSnapshots,
+            currentTargetNameSnapshot);
+    }
+
+    private async Task SaveCombatRecordAsync(
+        CombatRecord record,
+        string reason,
+        IReadOnlyDictionary<int, ParticipantSnapshot> rowSnapshots,
+        string currentTargetNameSnapshot)
+    {
+        if (!string.Equals(reason, "프로그램 종료", StringComparison.Ordinal))
+        {
+            await Task.Delay(CombatRecordSaveDelayMilliseconds);
+        }
+
+        EnrichCombatRecord(record, rowSnapshots, currentTargetNameSnapshot);
         _combatRecordStore.Save(record, retentionSeconds: CombatRecordRetentionSeconds);
     }
 
-    private void EnrichCombatRecord(CombatRecord record)
+    private void EnrichCombatRecord(
+        CombatRecord record,
+        IReadOnlyDictionary<int, ParticipantSnapshot> rowSnapshots,
+        string currentTargetNameSnapshot)
     {
+        if (IsPlaceholderTarget(record.TargetName) && !string.IsNullOrWhiteSpace(currentTargetNameSnapshot) && currentTargetNameSnapshot != "타겟 대기 중")
+        {
+            record.TargetName = currentTargetNameSnapshot;
+        }
+
         var totalDamage = Math.Max(1L, record.Participants.Sum(item => item.TotalDamage));
         foreach (var participant in record.Participants)
         {
             participant.PartyShareRatio = (double)participant.TotalDamage / totalDamage;
 
-            if (participant.ActorId > 0 && _rowsByActorId.TryGetValue(participant.ActorId, out var liveRow))
+            if (participant.ActorId > 0 && rowSnapshots.TryGetValue(participant.ActorId, out var liveRow))
             {
-                ApplyParticipantRow(participant, liveRow);
+                if (IsPlaceholderActor(participant.Name) && liveRow.IsResolvedName)
+                {
+                    participant.Name = liveRow.Name;
+                }
+
+                ApplyParticipantSnapshot(participant, liveRow);
                 continue;
             }
 
@@ -1477,6 +1513,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 string.Equals(profile.Nickname, participant.Name, StringComparison.OrdinalIgnoreCase));
             if (cached is not null)
             {
+                participant.Name = cached.Nickname;
                 participant.Server = cached.Server;
                 participant.Job = cached.Job;
                 participant.JobImageUrl = cached.JobImageUrl;
@@ -1488,6 +1525,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     }
 
     private static void ApplyParticipantRow(CombatRecordParticipant participant, DpsPlayerRow row)
+    {
+        participant.Server = row.Server;
+        participant.Job = row.Job;
+        participant.JobImageUrl = row.JobImageUrl;
+        participant.CombatScore = row.CombatScore;
+        participant.IsSelf = row.IsSelf;
+        participant.IsPartyCandidate = row.IsPartyCandidate;
+        participant.MajorTitles = row.MajorTitles;
+        participant.MajorStigmas = row.MajorStigmas;
+    }
+
+    private static void ApplyParticipantSnapshot(CombatRecordParticipant participant, ParticipantSnapshot row)
     {
         participant.Server = row.Server;
         participant.Job = row.Job;
@@ -1553,6 +1602,47 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private static string GetProfileKey(string nickname, string? server)
     {
         return $"{server ?? string.Empty}|{nickname}";
+    }
+
+    private static bool IsPlaceholderActor(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name)
+            || name.StartsWith("#", StringComparison.Ordinal)
+            || string.Equals(name, "이름 확인중", StringComparison.Ordinal);
+    }
+
+    private static bool IsPlaceholderTarget(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name)
+            || name.StartsWith("#", StringComparison.Ordinal)
+            || string.Equals(name, "타겟 확인중", StringComparison.Ordinal)
+            || string.Equals(name, "타겟 미상", StringComparison.Ordinal);
+    }
+
+    private sealed record ParticipantSnapshot(
+        string Name,
+        string Server,
+        string Job,
+        string JobImageUrl,
+        long CombatScore,
+        bool IsSelf,
+        bool IsPartyCandidate,
+        IReadOnlyList<string> MajorTitles,
+        IReadOnlyList<string> MajorStigmas,
+        bool IsResolvedName)
+    {
+        public static ParticipantSnapshot FromRow(DpsPlayerRow row) =>
+            new(
+                row.Name,
+                row.Server,
+                row.Job,
+                row.JobImageUrl,
+                row.CombatScore,
+                row.IsSelf,
+                row.IsPartyCandidate,
+                row.MajorTitles.ToArray(),
+                row.MajorStigmas.ToArray(),
+                row.IsResolvedName);
     }
 
     private static (string Nickname, string? ServerName) ParseSearchInput(string input)
