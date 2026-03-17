@@ -1,86 +1,99 @@
-﻿# AION2-DPS-VIEWER
+# AION2-DPS-VIEWER
 
-?꾩씠????`DPS 誘명꽣 + ?꾪댋 ?뺣낫 議고쉶` ?듯빀 ?꾨줈洹몃옩?낅땲??
+아이온2용 `DPS 미터 + 아툴 정보 조회` 통합 프로그램입니다.
 
-`DPSVIEWER`???ㅼ떆媛??꾪닾 ?뺣낫瑜??쒖떆?섍퀬, 媛먯???罹먮┃?곗쓽 ?꾪댋 ?뺣낫? ?곸꽭 ?ㅽ궗 ?뺣낫, ?꾪닾 湲곕줉???④퍡 ?뺤씤?????덇쾶 留뚮뱺 WPF ?곗뒪?ы넲 ?깆엯?덈떎.
+`DPSVIEWER`는 실시간 전투 정보를 표시하고, 감지된 캐릭터의 아툴 정보와 상세 스킬 정보, 전투 기록을 함께 확인할 수 있게 만든 WPF 데스크톱 앱입니다.
 
-## ?꾩옱 踰꾩쟾
+## 현재 버전
 
-- `v2.1.2`
-- 湲곗? ?좎쭨: `2026-03-17`
+- `v3.0.3`
+- 기준 날짜: `2026-03-17`
 
-## v2.1.2 ?섏젙 ?ы빆
+## v3.0.3 수정 사항
 
-- ?꾪닾 湲곕줉 ?곸꽭李쎌쓣 罹먮┃??紐⑸줉 以묒떖?쇰줈 ?뺣━
-- 罹먮┃???붾툝?대┃ ???ㅽ궗 ?곸꽭李쎌씠 ?대━?꾨줉 遺꾨━
-- ?꾪닾 湲곕줉 踰꾪듉???섎떒 ?곗륫?쇰줈 ?대룞???낅뜲?댄듃 ?뺤씤怨?寃뱀튂吏 ?딅룄濡??섏젙
-- ?꾪닾 湲곕줉 蹂닿? ?쒓컙 ?ㅼ젙 異붽?
-- 湲곕낯 ?⑥텞??蹂寃?  - DPS 珥덇린?? `Ctrl + R`
-  - ?꾩껜 珥덇린?? `Ctrl + F1`
+- 보스 패킷 정보와 `mobs.json` 보스 메타데이터를 함께 사용하도록 보강
+- 현재 보스 타겟 추적 및 타겟 HP 표시 추가
+- 간소화 모드에서 검색창 숨김 및 상위 4명만 표시
+- 전투 기록 상세를 캐릭터 목록 중심으로 정리
+- 전체 UI 크기와 여백을 축소해 더 타이트하게 정리
+- 한글 깨짐 문구 복구
+- 업데이트 버튼을 자동 업데이트 실행 버튼으로 변경
+- 간소화 모드에서 업데이트 버튼 숨김
+- 간소화 모드에서 상태/타겟 요약 패널 숨김
 
-## 二쇱슂 湲곕뒫
+## 주요 기능
 
-- ?ㅼ떆媛?DPS 吏묎퀎
-- ?먮룞 媛먯? 罹먮┃???꾪댋 ?뺣낫 議고쉶
-- 罹먮┃???붾툝?대┃ ?곸꽭李?- ?ㅽ궗蹂???鍮꾩쨷 / ?щ━?곗뺄 / ?꾩쟻 ?곕?吏 ?뺤씤
-- ?꾪닾 湲곕줉 ???/ 紐⑸줉 / ?곸꽭 蹂닿린
-- ?뚰떚 ?꾨낫 ?쒖떆
-- 媛꾩냼??紐⑤뱶
-- ?щ챸??/ 吏묎퀎 ?쒓컙 / 蹂닿? ?쒓컙 / ?⑥텞???ㅼ젙
+- 실시간 DPS 집계
+- 자동 감지된 캐릭터의 아툴 정보 조회
+- 캐릭터 더블클릭 상세창
+- 스킬별 딜 비중 / 치명률 / 누적 데미지 확인
+- 전투 기록 저장 / 목록 / 상세 보기
+- 파티 후보 표시
+- 간소화 모드
+- 투명도 / 집계 시간 / 보관 시간 / 단축키 설정
 
-## ?ㅽ뻾 ??以鍮?
-### 1. Npcap ?ㅼ튂
+## 실행 전 준비
 
-???꾨줈洹몃옩? Windows ?⑦궥 罹≪쿂 ?쒕씪?대쾭媛 ?꾩슂?⑸땲??
+### 1. Npcap 설치
 
-- 怨듭떇 ?ъ씠?? [Npcap](https://npcap.com/)
-- ?ㅼ슫濡쒕뱶: [Npcap Download](https://npcap.com/#download)
+이 프로그램은 Windows 패킷 캡처 드라이버가 필요합니다.
 
-?ㅼ튂 ???꾨줈洹몃옩? `愿由ъ옄 沅뚰븳`?쇰줈 ?ㅽ뻾?섎뒗 寃껋쓣 沅뚯옣?⑸땲??
+- 공식 사이트: [Npcap](https://npcap.com/)
+- 다운로드: [Npcap Download](https://npcap.com/#download)
 
-### 2. .NET Desktop Runtime 8 ?ㅼ튂
+설치 후 프로그램은 `관리자 권한`으로 실행하는 것을 권장합니다.
 
-諛고룷 ?ㅽ뻾 ?뚯씪? `.NET Desktop Runtime 8`???꾩슂?⑸땲??
+### 2. .NET Desktop Runtime 8 설치
 
-- 怨듭떇 ?섏씠吏: [.NET 8 ?ㅼ슫濡쒕뱶](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-- 吏곸젒 ?ㅼ튂: [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
+배포 실행 파일은 `.NET Desktop Runtime 8`이 필요합니다.
 
-## ?ㅽ뻾 ?뚯씪
+- 공식 페이지: [.NET 8 다운로드](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- 직접 설치: [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime)
 
-- 媛쒕컻???ㅽ뻾蹂? `dist-dev-2.1.2`
-- 諛고룷???ㅽ뻾蹂? `dist-release-2.1.2`
+## 실행 파일
 
-## ?ㅽ뻾 諛⑸쾿
+- 개발용 실행본: `dist-dev-3.0.3`
+- 배포용 실행본: `dist-release-3.0.3`
 
-愿由ъ옄 沅뚰븳?쇰줈 ?ㅽ뻾?섎뒗 寃껋쓣 沅뚯옣?⑸땲??
+## 실행 방법
 
-```powershell
-.\dist-release-2.1.2\Aion2Dashboard.exe
-```
-
-?먮뒗 媛쒕컻??
-
-```powershell
-.\dist-dev-2.1.2\Aion2Dashboard.exe
-```
-
-## 鍮뚮뱶
+관리자 권한으로 실행하는 것을 권장합니다.
 
 ```powershell
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-2.1.2
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-2.1.2 -p:DefineConstants=DISTRIBUTION
+.\dist-release-3.0.3\Aion2Dashboard.exe
 ```
 
-## 諛고룷 ?뚯씪
+또는 개발용:
 
-GitHub ??μ냼?먮뒗 ?뚯뒪肄붾뱶瑜??щ━怨? ?ㅽ뻾 ?뚯씪? `Releases`???щ━??諛⑹떇??沅뚯옣?⑸땲??
+```powershell
+.\dist-dev-3.0.3\Aion2Dashboard.exe
+```
 
-- 諛고룷??zip: `DPSVIEWER-release-2.1.2.zip`
-- 媛쒕컻??zip: `DPSVIEWER-dev-2.1.2.zip`
+## 빌드
 
-## 二쇱쓽
+```powershell
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-3.0.3
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-3.0.3 -p:DefineConstants=DISTRIBUTION
+```
 
-- 愿由ъ옄 沅뚰븳 ?ㅽ뻾 沅뚯옣
-- ?ㅽ듃?뚰겕/?⑦궥 罹≪쿂 ?섍꼍???곕씪 ?숈옉 李⑥씠媛 ?덉쓣 ???덉쓬
-- ?쇰? 湲곕뒫? 寃뚯엫 ?⑦궥 蹂?붿뿉 ?곕씪 異붽? 蹂댁젙???꾩슂?????덉쓬
+## 배포 파일
 
+GitHub 저장소에는 소스코드를 올리고, 실행 파일은 `Releases`에 올리는 방식을 권장합니다.
+
+- 배포용 zip: `DPSVIEWER-release-3.0.3.zip`
+- 개발용 zip: `DPSVIEWER-dev-3.0.3.zip`
+
+## 사용 방법
+
+1. 프로그램 실행 후 자동으로 DPS 감지가 시작됩니다.
+2. 상단 검색창에서 종족, 서버, 닉네임으로 캐릭터를 검색할 수 있습니다.
+3. 실시간 DPS 목록에서 캐릭터를 더블클릭하면 아툴 정보와 스킬 상세를 볼 수 있습니다.
+4. `전투 기록` 버튼을 누르면 저장된 전투 목록을 열 수 있습니다.
+5. 기록 목록에서 전투를 더블클릭하면 참가자 목록이 열리고, 참가 캐릭터를 더블클릭하면 해당 캐릭터의 스킬 상세를 볼 수 있습니다.
+6. `간소화` 버튼을 누르면 검색창이 숨겨지고 상위 4명의 DPS만 표시됩니다.
+
+## 주의
+
+- 관리자 권한 실행 권장
+- 네트워크 / 패킷 캡처 환경에 따라 동작 차이가 있을 수 있음
+- 게임 패치나 패킷 구조 변경에 따라 일부 기능은 추가 보정이 필요할 수 있음

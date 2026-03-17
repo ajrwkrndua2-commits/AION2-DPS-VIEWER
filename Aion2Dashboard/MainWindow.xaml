@@ -1,4 +1,4 @@
-<Window x:Class="Aion2Dashboard.MainWindow"
+﻿<Window x:Class="Aion2Dashboard.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,10 +7,10 @@
         xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="DPSVIEWER"
-        Width="760"
-        Height="860"
-        MinWidth="440"
-        MinHeight="520"
+        Width="648"
+        Height="716"
+        MinWidth="400"
+        MinHeight="420"
         AllowsTransparency="True"
         WindowStyle="None"
         ResizeMode="CanResize"
@@ -62,7 +62,7 @@
                 <Grid Margin="14,9,14,9">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="154" />
+                        <ColumnDefinition Width="146" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
@@ -79,7 +79,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V2.1.2">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V3.0.3">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
@@ -105,7 +105,17 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Margin="12,10,12,0" Padding="12,10" CornerRadius="12" Background="#B91D2A3C" BorderBrush="#4A79AF" BorderThickness="1">
+            <Border Grid.Row="1" Margin="12,8,12,0" Padding="10,8" CornerRadius="12" Background="#B91D2A3C" BorderBrush="#4A79AF" BorderThickness="1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="62" />
@@ -121,6 +131,16 @@
             </Border>
 
             <Border Grid.Row="2" Margin="12,10,12,0" Padding="12,10" CornerRadius="12" Background="#A61D2B3D" BorderBrush="#476A96" BorderThickness="1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -136,9 +156,12 @@
                             <TextBlock Foreground="#E0ECFF" Style="{StaticResource CompactAwareText}" Text="{Binding MeterModeText}" />
                         </Border>
                         <Border Margin="0,0,8,6" Padding="10,5" CornerRadius="10" Background="{Binding TargetBrush}" BorderBrush="{Binding TargetBorderBrush}" BorderThickness="1">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Foreground="#EFF6FF" FontSize="10" FontWeight="SemiBold" Text="{Binding TargetBadgeText}" />
-                                <TextBlock Margin="8,0,0,0" Foreground="White" FontSize="11" FontWeight="SemiBold" Text="{Binding CurrentTargetName}" />
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Foreground="#EFF6FF" FontSize="10" FontWeight="SemiBold" Text="{Binding TargetBadgeText}" />
+                                    <TextBlock Margin="8,0,0,0" Foreground="White" FontSize="11" FontWeight="SemiBold" Text="{Binding CurrentTargetName}" />
+                                </StackPanel>
+                                <TextBlock Margin="0,4,0,0" Foreground="#F6D277" FontSize="10" Text="{Binding CurrentTargetHealthText}" />
                             </StackPanel>
                         </Border>
                         <Border Margin="0,0,8,6" Padding="8,4" CornerRadius="10" Background="#453654">
@@ -150,7 +173,7 @@
                     </WrapPanel>
                     <Button Grid.RowSpan="2"
                             Grid.Column="1"
-                            MinWidth="108"
+                            MinWidth="98"
                             Margin="12,0,0,0"
                             VerticalAlignment="Center"
                             Background="#30527A"
@@ -158,17 +181,30 @@
                             BorderBrush="#6A98D2"
                             BorderThickness="1"
                             Command="{Binding CheckUpdateCommand}"
-                            Content="업데이트 확인"
-                            Style="{StaticResource CompactAwareButton}" />
+                            Content="자동 업데이트">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource CompactAwareButton}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
                 </Grid>
             </Border>
 
-            <Border Grid.Row="3" Margin="12,10,12,0" Padding="10" CornerRadius="14" Background="#B6283448" BorderBrush="#5C8FD0" BorderThickness="1" MouseLeftButtonDown="PinnedSearchCard_MouseLeftButtonDown">
+            <Border Grid.Row="3" Margin="12,8,12,0" Padding="10" CornerRadius="14" Background="#B6283448" BorderBrush="#5C8FD0" BorderThickness="1" MouseLeftButtonDown="PinnedSearchCard_MouseLeftButtonDown">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Visible" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding PinnedSearchPlayer}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
                                 <Setter Property="Visibility" Value="Collapsed" />
                             </DataTrigger>
                         </Style.Triggers>
@@ -226,7 +262,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <TextBlock Foreground="#C7D8F9" FontSize="12" TextWrapping="Wrap" Text="실시간 DPS 목록입니다. 캐릭터를 더블클릭하면 아툴 정보와 스킬 상세가 열립니다." />
-                    <ListView x:Name="LivePlayersList" Grid.Row="1" Margin="0,10,0,0" Background="Transparent" BorderThickness="0" ItemsSource="{Binding LivePlayers}" MouseDoubleClick="LivePlayersList_MouseDoubleClick">
+                    <ListView x:Name="LivePlayersList" Grid.Row="1" Margin="0,8,0,0" Background="Transparent" BorderThickness="0" ItemsSource="{Binding DisplayPlayers}" MouseDoubleClick="LivePlayersList_MouseDoubleClick">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="Padding" Value="0" />
@@ -368,8 +404,8 @@
                 </Grid>
             </Border>
             <Button Grid.RowSpan="7"
-                    MinWidth="82"
-                    Margin="0,0,118,16"
+                    MinWidth="86"
+                    Margin="0,0,126,16"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Background="#2F4768"
@@ -411,3 +447,4 @@
         </Grid>
     </Border>
 </Window>
+
