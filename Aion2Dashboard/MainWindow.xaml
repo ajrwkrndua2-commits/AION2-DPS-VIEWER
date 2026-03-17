@@ -79,7 +79,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V3.0.4">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V3.1.0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
@@ -261,8 +261,29 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Foreground="#C7D8F9" FontSize="12" TextWrapping="Wrap" Text="실시간 DPS 목록입니다. 캐릭터를 더블클릭하면 아툴 정보와 스킬 상세가 열립니다." />
+                    <TextBlock Foreground="#C7D8F9" FontSize="12" TextWrapping="Wrap" Text="실시간 DPS 목록입니다. 캐릭터를 더블클릭하면 아툴 정보와 스킬 상세가 열립니다.">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <ListView x:Name="LivePlayersList" Grid.Row="1" Margin="0,8,0,0" Background="Transparent" BorderThickness="0" ItemsSource="{Binding DisplayPlayers}" MouseDoubleClick="LivePlayersList_MouseDoubleClick">
+                        <ListView.Style>
+                            <Style TargetType="ListView">
+                                <Setter Property="Margin" Value="0,8,0,0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                        <Setter Property="Margin" Value="0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.Style>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="Padding" Value="0" />
@@ -272,7 +293,7 @@
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter Property="Margin" Value="0,0,0,4" />
+                                        <Setter Property="Margin" Value="0" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -289,7 +310,7 @@
                                                 <DataTrigger Binding="{Binding IsPartyCandidate}" Value="True"><Setter Property="Background" Value="#CC35506D" /><Setter Property="BorderBrush" Value="#7CB7FF" /></DataTrigger>
                                                 <DataTrigger Binding="{Binding IsSelf}" Value="True"><Setter Property="Background" Value="#CC375667" /><Setter Property="BorderBrush" Value="#8BE0AF" /></DataTrigger>
                                                 <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                    <Setter Property="Padding" Value="8,7" />
+                                                    <Setter Property="Padding" Value="7,5" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -298,6 +319,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Grid Width="36" Height="36" VerticalAlignment="Top">
                                             <Grid.Style>
@@ -312,24 +334,63 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Grid.Style>
-                                            <Border Background="#2A4D7C" CornerRadius="18" BorderBrush="#7EB2FF" BorderThickness="1" />
+                                            <Border Background="#2A4D7C" CornerRadius="18" BorderBrush="#7EB2FF" BorderThickness="1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
                                             <Image Source="{Binding JobImageUrl}" Stretch="Uniform" Margin="4">
                                                 <Image.Style>
                                                     <Style TargetType="Image">
                                                         <Setter Property="Margin" Value="4" />
+                                                        <Setter Property="Visibility" Value="Visible" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                <Setter Property="Margin" Value="3" />
+                                                                <Setter Property="Margin" Value="1" />
+                                                                <Setter Property="Visibility" Value="Visible" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
+                                            <Grid RenderTransformOrigin="0.5,0.5">
+                                                <Grid.Style>
+                                                    <Style TargetType="Grid">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </Style>
+                                                </Grid.Style>
+                                                <Grid.RenderTransform>
+                                                    <RotateTransform Angle="45" />
+                                                </Grid.RenderTransform>
+                                                <Border Width="18"
+                                                        Height="18"
+                                                        CornerRadius="2"
+                                                        Background="{Binding JobAccentBrush}"
+                                                        BorderBrush="{Binding JobAccentBorderBrush}"
+                                                        BorderThickness="1.3"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center" />
+                                                <Border Width="8"
+                                                        Height="8"
+                                                        CornerRadius="1.5"
+                                                        Background="#10151F"
+                                                        BorderBrush="{Binding JobAccentBorderBrush}"
+                                                        BorderThickness="0.8"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center" />
+                                            </Grid>
                                         </Grid>
-                                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center">
                                             <StackPanel.Style>
                                                 <Style TargetType="StackPanel">
-                                                    <Setter Property="Margin" Value="10,0,0,0" />
+                                                    <Setter Property="Margin" Value="10,0,12,0" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                                             <Setter Property="Margin" Value="8,0,0,0" />
@@ -348,6 +409,19 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
+                                                <Border DockPanel.Dock="Left" Margin="8,0,0,0" Padding="6,1" CornerRadius="8" Background="#6A5536">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Foreground="#FFE39A" FontSize="10" Text="{Binding CompactServerLabel}" />
+                                                </Border>
                                                 <WrapPanel DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center">
                                                     <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#2E5A40">
                                                         <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsSelf}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
@@ -357,28 +431,129 @@
                                                         <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsPartyCandidate}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
                                                         <TextBlock Foreground="#E4F1FF" FontSize="10" FontWeight="SemiBold" Text="PARTY" />
                                                     </Border>
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#6A5536"><TextBlock Foreground="#FFE39A" FontSize="11" Text="{Binding Server}" /></Border>
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#66417D"><TextBlock Foreground="#F0C6FF" FontSize="11" Text="{Binding Job}" /></Border>
-                                                    <Border Padding="7,1" CornerRadius="8" Background="#37537F"><TextBlock Foreground="#C6DAFF" FontSize="11" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" /></Border>
+                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#6A5536">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Foreground="#FFE39A" FontSize="11" Text="{Binding Server}" />
+                                                    </Border>
+                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#66417D">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Foreground="#F0C6FF" FontSize="11" Text="{Binding Job}" />
+                                                    </Border>
+                                                    <Border Padding="7,1" CornerRadius="8" Background="#37537F">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Foreground="#C6DAFF" FontSize="11" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
+                                                    </Border>
                                                 </WrapPanel>
                                             </DockPanel>
-                                            <WrapPanel Margin="0,6,0,0">
-                                                <WrapPanel.Style>
-                                                    <Style TargetType="WrapPanel">
+                                            <Border Margin="0,4,0,0" Padding="7,2" CornerRadius="8" Background="#37537F" HorizontalAlignment="Left">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Setter Property="Margin" Value="0,6,0,0" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                                                 <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Foreground="#C6DAFF" FontSize="10" FontWeight="SemiBold" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
+                                            </Border>
+                                            <WrapPanel Margin="0,6,0,0">
+                                                <WrapPanel.Style>
+                                                    <Style TargetType="WrapPanel">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Margin" Value="0,6,0,0" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
                                                                 <Setter Property="Margin" Value="0,4,0,0" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </WrapPanel.Style>
-                                                <Border Margin="0,0,4,2" Padding="6,1" CornerRadius="8" Background="#29486A"><TextBlock Foreground="#8ED6FF" FontSize="9" FontWeight="SemiBold" Text="{Binding Dps, StringFormat=DPS {0:N0}}" /></Border>
-                                                <Border Margin="0,0,4,2" Padding="6,1" CornerRadius="8" Background="#645224"><TextBlock Foreground="#FFD96A" FontSize="9" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" /></Border>
-                                                <Border Margin="0,0,4,2" Padding="6,1" CornerRadius="8" Background="#5A2F6D"><TextBlock Foreground="#F2C2FF" FontSize="9" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}" /></Border>
-                                                <Border Margin="0,0,4,2" Padding="6,1" CornerRadius="8" Background="#285042"><TextBlock Foreground="#A5F5CA" FontSize="9" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}" /></Border>
+                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#29486A">
+                                                    <TextBlock Foreground="#8ED6FF" FontWeight="SemiBold" Text="{Binding Dps, StringFormat=DPS {0:N0}}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="FontSize" Value="10" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="FontSize" Value="9" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#645224">
+                                                    <TextBlock Foreground="#FFD96A" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="FontSize" Value="10" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="FontSize" Value="9" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#5A2F6D">
+                                                    <TextBlock Foreground="#F2C2FF" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="FontSize" Value="10" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="FontSize" Value="9" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
+                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#285042">
+                                                    <TextBlock Foreground="#A5F5CA" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="FontSize" Value="10" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="FontSize" Value="9" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
                                             </WrapPanel>
                                             <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding MajorTitles}">
                                                 <ItemsControl.Style><Style TargetType="ItemsControl"><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></ItemsControl.Style>
@@ -391,13 +566,43 @@
                                                 <ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#284635"><TextBlock Foreground="#9FF5C8" FontSize="9" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
                                             </ItemsControl>
                                         </StackPanel>
-                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                            <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></StackPanel.Style>
-                                            <Grid Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /><ColumnDefinition Width="68" /></Grid.ColumnDefinitions><TextBlock Foreground="#C7D8F9" FontSize="10" VerticalAlignment="Center" Text="지분" /><ProgressBar Grid.Column="1" Margin="8,0,8,0" Height="8" Minimum="0" Maximum="1" Value="{Binding PartyShareRatio}" Background="#3E284E" Foreground="#DD95FF" BorderThickness="0" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Foreground="#F2C2FF" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right" Text="{Binding PartyShareRatio, StringFormat=P0}" /></Grid>
-                                            <Grid Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /><ColumnDefinition Width="68" /></Grid.ColumnDefinitions><TextBlock Foreground="#C7D8F9" FontSize="10" VerticalAlignment="Center" Text="DPS" /><ProgressBar Grid.Column="1" Margin="8,0,8,0" Height="8" Minimum="0" Maximum="1" Value="{Binding DpsRatio}" Background="#243A56" Foreground="#67C3FF" BorderThickness="0" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Foreground="#8ED6FF" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right" Text="{Binding Dps, StringFormat=N0}" /></Grid>
-                                            <Grid Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /><ColumnDefinition Width="68" /></Grid.ColumnDefinitions><TextBlock Foreground="#C7D8F9" FontSize="10" VerticalAlignment="Center" Text="누적" /><ProgressBar Grid.Column="1" Margin="8,0,8,0" Height="8" Minimum="0" Maximum="1" Value="{Binding TotalDamageRatio}" Background="#51441E" Foreground="#FFD96A" BorderThickness="0" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Foreground="#FFD96A" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right" Text="{Binding TotalDamage, StringFormat=N0}" /></Grid>
-                                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="32" /><ColumnDefinition Width="*" /><ColumnDefinition Width="68" /></Grid.ColumnDefinitions><TextBlock Foreground="#C7D8F9" FontSize="10" VerticalAlignment="Center" Text="치명" /><ProgressBar Grid.Column="1" Margin="8,0,8,0" Height="8" Minimum="0" Maximum="1" Value="{Binding CritRate}" Background="#27483D" Foreground="#8AE1B7" BorderThickness="0" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Foreground="#A5F5CA" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right" Text="{Binding CritRate, StringFormat=P0}" /></Grid>
-                                        </StackPanel>
+                                        <Grid Grid.Column="2" Width="188" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                            <Setter Property="Width" Value="176" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,6">
+                                                <TextBlock Foreground="#8ED6FF" FontSize="10" FontWeight="Bold" Text="{Binding Dps, StringFormat=DPS {0:N0}}" />
+                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding DpsRatio}" Background="#243A56" Foreground="#67C3FF" BorderThickness="0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
+                                                <TextBlock Foreground="#FFD96A" FontSize="10" FontWeight="Bold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" />
+                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding TotalDamageRatio}" Background="#51441E" Foreground="#FFD96A" BorderThickness="0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
+                                                <TextBlock Foreground="#F2C2FF" FontSize="10" FontWeight="Bold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}" />
+                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding PartyShareRatio}" Background="#3E284E" Foreground="#DD95FF" BorderThickness="0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Row="1" Grid.Column="1">
+                                                <TextBlock Foreground="#A5F5CA" FontSize="10" FontWeight="Bold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}" />
+                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding CritRate}" Background="#27483D" Foreground="#8AE1B7" BorderThickness="0" />
+                                            </StackPanel>
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -412,6 +617,9 @@
                         <Setter Property="Visibility" Value="Visible" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsAdBannerVisible}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
                                 <Setter Property="Visibility" Value="Collapsed" />
                             </DataTrigger>
                         </Style.Triggers>
@@ -435,6 +643,16 @@
             </Border>
 
             <Border Grid.Row="6" Background="#C0162231" CornerRadius="0,0,18,18" Padding="12,10">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -458,8 +676,18 @@
                     BorderBrush="#6A98D2"
                     BorderThickness="1"
                     Click="OpenCombatRecords_Click"
-                    Content="전투 기록"
-                    Style="{StaticResource CompactAwareButton}" />
+                    Content="전투 기록">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource CompactAwareButton}">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
             <Border Grid.RowSpan="7"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"

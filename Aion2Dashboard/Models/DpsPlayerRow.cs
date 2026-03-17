@@ -1,3 +1,4 @@
+using System.Windows.Media;
 using Aion2Dashboard.Infrastructure;
 
 namespace Aion2Dashboard.Models;
@@ -48,7 +49,15 @@ public sealed class DpsPlayerRow : ObservableObject
     public string Job
     {
         get => _job;
-        set => SetProperty(ref _job, value);
+        set
+        {
+            if (SetProperty(ref _job, value))
+            {
+                RaisePropertyChanged(nameof(JobAccentBrush));
+                RaisePropertyChanged(nameof(JobAccentBorderBrush));
+                RaisePropertyChanged(nameof(JobAccentText));
+            }
+        }
     }
 
     public string JobImageUrl
@@ -60,7 +69,13 @@ public sealed class DpsPlayerRow : ObservableObject
     public string Server
     {
         get => _server;
-        set => SetProperty(ref _server, value);
+        set
+        {
+            if (SetProperty(ref _server, value))
+            {
+                RaisePropertyChanged(nameof(CompactServerLabel));
+            }
+        }
     }
 
     public long CombatScore
@@ -133,5 +148,123 @@ public sealed class DpsPlayerRow : ObservableObject
     {
         get => _isPartyCandidate;
         set => SetProperty(ref _isPartyCandidate, value);
+    }
+
+    public string CompactServerLabel =>
+        string.IsNullOrWhiteSpace(Server) || Server == "-"
+            ? string.Empty
+            : $"[{Server}]";
+
+    public Brush JobAccentBrush => ResolveJobBrush(Job);
+
+    public Brush JobAccentBorderBrush => ResolveJobBorderBrush(Job);
+
+    public string JobAccentText => ResolveJobShortText(Job);
+
+    private static Brush ResolveJobBrush(string job)
+    {
+        var (background, _) = ResolveJobColors(job);
+        return background;
+    }
+
+    private static Brush ResolveJobBorderBrush(string job)
+    {
+        var (_, border) = ResolveJobColors(job);
+        return border;
+    }
+
+    private static (Brush Background, Brush Border) ResolveJobColors(string job)
+    {
+        if (job.Contains("검성", StringComparison.OrdinalIgnoreCase) || job.Contains("gladiator", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#734E2F"), BrushFromHex("#E2A66D"));
+        }
+
+        if (job.Contains("수호", StringComparison.OrdinalIgnoreCase) || job.Contains("templar", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#3C536E"), BrushFromHex("#8EB5E8"));
+        }
+
+        if (job.Contains("살성", StringComparison.OrdinalIgnoreCase) || job.Contains("assassin", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#5A366B"), BrushFromHex("#E3A1FF"));
+        }
+
+        if (job.Contains("궁성", StringComparison.OrdinalIgnoreCase) || job.Contains("ranger", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#2E6A53"), BrushFromHex("#87E7BB"));
+        }
+
+        if (job.Contains("치유", StringComparison.OrdinalIgnoreCase) || job.Contains("cleric", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#5A7B2F"), BrushFromHex("#C6F07B"));
+        }
+
+        if (job.Contains("호법", StringComparison.OrdinalIgnoreCase) || job.Contains("chanter", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#62522B"), BrushFromHex("#F0D37C"));
+        }
+
+        if (job.Contains("마도", StringComparison.OrdinalIgnoreCase) || job.Contains("sorcerer", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#2F477A"), BrushFromHex("#7EB6FF"));
+        }
+
+        if (job.Contains("정령", StringComparison.OrdinalIgnoreCase) || job.Contains("elementalist", StringComparison.OrdinalIgnoreCase))
+        {
+            return (BrushFromHex("#2D665A"), BrushFromHex("#84E1CF"));
+        }
+
+        return (BrushFromHex("#48566C"), BrushFromHex("#A6BDD8"));
+    }
+
+    private static string ResolveJobShortText(string job)
+    {
+        if (job.Contains("검성", StringComparison.OrdinalIgnoreCase) || job.Contains("gladiator", StringComparison.OrdinalIgnoreCase))
+        {
+            return "검";
+        }
+
+        if (job.Contains("수호", StringComparison.OrdinalIgnoreCase) || job.Contains("templar", StringComparison.OrdinalIgnoreCase))
+        {
+            return "수";
+        }
+
+        if (job.Contains("살성", StringComparison.OrdinalIgnoreCase) || job.Contains("assassin", StringComparison.OrdinalIgnoreCase))
+        {
+            return "살";
+        }
+
+        if (job.Contains("궁성", StringComparison.OrdinalIgnoreCase) || job.Contains("ranger", StringComparison.OrdinalIgnoreCase))
+        {
+            return "궁";
+        }
+
+        if (job.Contains("치유", StringComparison.OrdinalIgnoreCase) || job.Contains("cleric", StringComparison.OrdinalIgnoreCase))
+        {
+            return "치";
+        }
+
+        if (job.Contains("호법", StringComparison.OrdinalIgnoreCase) || job.Contains("chanter", StringComparison.OrdinalIgnoreCase))
+        {
+            return "호";
+        }
+
+        if (job.Contains("마도", StringComparison.OrdinalIgnoreCase) || job.Contains("sorcerer", StringComparison.OrdinalIgnoreCase))
+        {
+            return "마";
+        }
+
+        if (job.Contains("정령", StringComparison.OrdinalIgnoreCase) || job.Contains("elementalist", StringComparison.OrdinalIgnoreCase))
+        {
+            return "정";
+        }
+
+        return "-";
+    }
+
+    private static SolidColorBrush BrushFromHex(string hex)
+    {
+        return (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
     }
 }
