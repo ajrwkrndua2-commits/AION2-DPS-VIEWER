@@ -100,6 +100,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _dpsMeterService.CharacterDetected += OnCharacterDetected;
         _dpsMeterService.TargetChanged += OnTargetChanged;
         _dpsMeterService.ResetSuggested += OnResetSuggested;
+        _dpsMeterService.CombatRecordCompleted += OnCombatRecordCompleted;
     }
 
     public ObservableCollection<ServerOption> Servers { get; } = [];
@@ -836,6 +837,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _dpsMeterService.CharacterDetected -= OnCharacterDetected;
         _dpsMeterService.TargetChanged -= OnTargetChanged;
         _dpsMeterService.ResetSuggested -= OnResetSuggested;
+        _dpsMeterService.CombatRecordCompleted -= OnCombatRecordCompleted;
         _dpsMeterService.Dispose();
     }
 
@@ -1033,9 +1035,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
-            SaveCombatRecordIfAvailable("자동 리셋");
             ResetAll();
             StatusText = message;
+        });
+    }
+
+    private void OnCombatRecordCompleted(object? sender, CombatRecord record)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            EnrichCombatRecord(record, _rowsByActorId.ToDictionary(
+                pair => pair.Key,
+                pair => ParticipantSnapshot.FromRow(pair.Value)), CurrentTargetName);
+            SaveCombatRecordCore(record);
         });
     }
 
@@ -1450,13 +1462,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var recordKey = $"{record.EndedAtUtc.Ticks}:{record.TotalDamage}:{record.TargetName}:{reason}";
-        if (string.Equals(_lastSavedCombatRecordKey, recordKey, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        _lastSavedCombatRecordKey = recordKey;
         var rowSnapshots = _rowsByActorId.ToDictionary(
             pair => pair.Key,
             pair => ParticipantSnapshot.FromRow(pair.Value));
@@ -1480,7 +1485,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         EnrichCombatRecord(record, rowSnapshots, currentTargetNameSnapshot);
-        _combatRecordStore.Save(record, retentionSeconds: CombatRecordRetentionSeconds);
+        SaveCombatRecordCore(record);
     }
 
     private void EnrichCombatRecord(
@@ -1617,6 +1622,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             || name.StartsWith("#", StringComparison.Ordinal)
             || string.Equals(name, "타겟 확인중", StringComparison.Ordinal)
             || string.Equals(name, "타겟 미상", StringComparison.Ordinal);
+    }
+
+    private void SaveCombatRecordCore(CombatRecord record)
+    {
+        var recordKey = $"{record.EndedAtUtc.Ticks}:{record.TotalDamage}:{record.TargetName}";
+        if (string.Equals(_lastSavedCombatRecordKey, recordKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastSavedCombatRecordKey = recordKey;
+        _combatRecordStore.Save(record, retentionSeconds: CombatRecordRetentionSeconds);
     }
 
     private sealed record ParticipantSnapshot(

@@ -28,6 +28,7 @@ public sealed class DpsMeterService : IDisposable
     private bool _bossOnlyMode;
     private int? _activeBossTargetId;
     private DateTime _activeBossLastHitUtc = DateTime.MinValue;
+    private DateTime _activeBossStartedUtc = DateTime.MinValue;
     private string _lastPublishedTargetKey = string.Empty;
     private DateTime _lastPartyGuessRefreshUtc = DateTime.MinValue;
     private DateTime _lastDamageUtc = DateTime.MinValue;
@@ -75,6 +76,7 @@ public sealed class DpsMeterService : IDisposable
     public event EventHandler<(int ActorId, string Name, int ServerId, int JobCode)>? CharacterDetected;
     public event EventHandler<TargetInfo?>? TargetChanged;
     public event EventHandler<string>? ResetSuggested;
+    public event EventHandler<CombatRecord>? CombatRecordCompleted;
 
     public void Start(int serverPort = 13328)
     {
@@ -160,6 +162,7 @@ public sealed class DpsMeterService : IDisposable
         _bossTargets.Clear();
         _activeBossTargetId = null;
         _activeBossLastHitUtc = DateTime.MinValue;
+        _activeBossStartedUtc = DateTime.MinValue;
         _bridge?.Reset();
         _lastDamageUtc = DateTime.MinValue;
         PublishTarget(null);
@@ -277,7 +280,7 @@ public sealed class DpsMeterService : IDisposable
         {
             StartedAtUtc = allEvents[0].Timestamp,
             EndedAtUtc = allEvents[^1].Timestamp,
-            TargetName = target?.Name ?? "타겟 미상",
+            TargetName = NormalizeTargetName(target?.Name),
             IsBossTarget = target?.IsBoss == true,
             BossOnlyMode = BossOnlyMode,
             TotalDamage = totalDamage,
@@ -652,6 +655,11 @@ public sealed class DpsMeterService : IDisposable
         {
             target.CurrentHp = Math.Max(0, target.CurrentHp - damage);
         }
+
+        if (_activeBossTargetId == targetId && target.IsBoss && target.CurrentHp == 0)
+        {
+            CompleteBossEncounter("보스 처치");
+        }
     }
 
     private void TrackBossEncounter(int targetId, DateTime now)
@@ -671,14 +679,17 @@ public sealed class DpsMeterService : IDisposable
         {
             _activeBossTargetId = targetId;
             _activeBossLastHitUtc = now;
+            _activeBossStartedUtc = now;
             return;
         }
 
         var switchThresholdSeconds = Math.Max(3, Math.Min(15, CombatResetSeconds / 2));
         if ((now - _activeBossLastHitUtc).TotalSeconds >= switchThresholdSeconds)
         {
+            CompleteBossEncounter("보스 전환");
             _activeBossTargetId = targetId;
             _activeBossLastHitUtc = now;
+            _activeBossStartedUtc = now;
         }
     }
 
@@ -694,8 +705,10 @@ public sealed class DpsMeterService : IDisposable
             return;
         }
 
+        CompleteBossEncounter("보스 리셋");
         _activeBossTargetId = null;
         _activeBossLastHitUtc = DateTime.MinValue;
+        _activeBossStartedUtc = DateTime.MinValue;
     }
 
     private int? SelectRecentBossTargetId()
@@ -802,7 +815,7 @@ public sealed class DpsMeterService : IDisposable
             return new CombatRecordParticipant
             {
                 ActorId = actorId,
-                Name = string.IsNullOrWhiteSpace(actor.Name) ? $"#{actorId}" : actor.Name,
+                Name = NormalizeActorName(actor.Name, actorId),
                 TotalDamage = totalDamage,
                 Dps = (long)(totalDamage / duration),
                 HitCount = events.Length,
@@ -894,6 +907,26 @@ public sealed class DpsMeterService : IDisposable
             || name.StartsWith("소환 :", StringComparison.Ordinal)
             || name.Contains("환영분신", StringComparison.Ordinal)
             || name.Contains("환영 분신", StringComparison.Ordinal);
+    }
+
+    private static string NormalizeActorName(string? name, int actorId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return actorId > 0 ? "이름 확인중" : "이름 미상";
+        }
+
+        return name.StartsWith("#", StringComparison.Ordinal) ? "이름 확인중" : name;
+    }
+
+    private static string NormalizeTargetName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "타겟 확인중";
+        }
+
+        return name.StartsWith("#", StringComparison.Ordinal) ? "타겟 확인중" : name;
     }
 
     private static void TrimEvents(ActorRuntime actor, DateTime cutoff)
@@ -988,4 +1021,130 @@ public sealed class DpsMeterService : IDisposable
     }
 
     private readonly record struct DamageEvent(DateTime Timestamp, int Damage, bool IsCritical, int TargetId);
+
+    private void CompleteBossEncounter(string reason)
+    {
+        if (!_activeBossTargetId.HasValue)
+        {
+            return;
+        }
+
+        var targetId = _activeBossTargetId.Value;
+        var startedAt = _activeBossStartedUtc == DateTime.MinValue
+            ? DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(1, MeterWindowSeconds))
+            : _activeBossStartedUtc;
+
+        var record = CaptureBossEncounterRecord(targetId, startedAt, DateTime.UtcNow, reason);
+        _activeBossTargetId = null;
+        _activeBossLastHitUtc = DateTime.MinValue;
+        _activeBossStartedUtc = DateTime.MinValue;
+
+        if (record is not null)
+        {
+            CombatRecordCompleted?.Invoke(this, record);
+        }
+    }
+
+    private CombatRecord? CaptureBossEncounterRecord(int targetId, DateTime startedAtUtc, DateTime endedAtUtc, string savedReason)
+    {
+        var participants = _actors
+            .Where(pair => !_summonOwners.ContainsKey(pair.Key))
+            .Select(pair => BuildBossParticipantRecord(pair.Key, pair.Value, targetId, startedAtUtc, endedAtUtc))
+            .Where(item => item is not null)
+            .Select(item => item!)
+            .OrderByDescending(item => item.TotalDamage)
+            .ToArray();
+
+        if (participants.Length == 0)
+        {
+            return null;
+        }
+
+        var totalDamage = participants.Sum(item => item.TotalDamage);
+        var target = _targets.TryGetValue(targetId, out var runtime)
+            ? new TargetInfo
+            {
+                TargetId = targetId,
+                Name = NormalizeTargetName(runtime.Name),
+                IsBoss = runtime.IsBoss,
+                CurrentHp = runtime.CurrentHp,
+                MaxHp = runtime.MaxHp,
+                DamageTaken = runtime.DamageTaken
+            }
+            : null;
+
+        return new CombatRecord
+        {
+            StartedAtUtc = startedAtUtc,
+            EndedAtUtc = endedAtUtc,
+            TargetName = target?.Name ?? "타겟 확인중",
+            IsBossTarget = true,
+            BossOnlyMode = true,
+            TotalDamage = totalDamage,
+            DurationSeconds = Math.Max(1.0, (endedAtUtc - startedAtUtc).TotalSeconds),
+            SavedReason = savedReason,
+            Participants = participants
+        };
+    }
+
+    private CombatRecordParticipant? BuildBossParticipantRecord(int actorId, ActorRuntime actor, int targetId, DateTime startedAtUtc, DateTime endedAtUtc)
+    {
+        lock (actor.SyncRoot)
+        {
+            var events = actor.Events
+                .Where(hit => hit.TargetId == targetId && hit.Timestamp >= startedAtUtc && hit.Timestamp <= endedAtUtc)
+                .OrderBy(hit => hit.Timestamp)
+                .ToArray();
+            if (events.Length == 0)
+            {
+                return null;
+            }
+
+            var totalDamage = events.Sum(hit => (long)hit.Damage);
+            var critCount = events.Count(hit => hit.IsCritical);
+            var duration = Math.Max(1.0, (events[^1].Timestamp - events[0].Timestamp).TotalSeconds);
+            var skillGroups = actor.Skills.Values
+                .Select(skill => new
+                {
+                    skill.SkillCode,
+                    Events = skill.Events
+                        .Where(hit => hit.TargetId == targetId && hit.Timestamp >= startedAtUtc && hit.Timestamp <= endedAtUtc)
+                        .ToArray()
+                })
+                .Where(item => item.Events.Length > 0)
+                .ToArray();
+
+            var maxDamage = Math.Max(1L, skillGroups
+                .Select(item => item.Events.Sum(hit => (long)hit.Damage))
+                .DefaultIfEmpty(1L)
+                .Max());
+
+            var skills = skillGroups
+                .Select(item => new SkillUsageEntry
+                {
+                    SkillCode = item.SkillCode,
+                    SkillName = _skillNameResolver.Resolve(item.SkillCode),
+                    TotalDamage = item.Events.Sum(hit => (long)hit.Damage),
+                    HitCount = item.Events.Length,
+                    CritRate = item.Events.Length == 0 ? 0 : (double)item.Events.Count(hit => hit.IsCritical) / item.Events.Length,
+                    MaxHit = item.Events.Max(hit => hit.Damage),
+                    DamageShare = totalDamage == 0 ? 0 : (double)item.Events.Sum(hit => (long)hit.Damage) / totalDamage,
+                    DamageRatio = maxDamage == 0 ? 0 : (double)item.Events.Sum(hit => (long)hit.Damage) / maxDamage
+                })
+                .OrderByDescending(item => item.TotalDamage)
+                .ToArray();
+
+            return new CombatRecordParticipant
+            {
+                ActorId = actorId,
+                Name = NormalizeActorName(actor.Name, actorId),
+                TotalDamage = totalDamage,
+                Dps = (long)(totalDamage / duration),
+                HitCount = events.Length,
+                CritRate = events.Length == 0 ? 0 : (double)critCount / events.Length,
+                IsPartyCandidate = _partyCandidateActorIds.Contains(actorId),
+                SkillUsages = skills
+            };
+        }
+    }
 }
