@@ -79,7 +79,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V2.0.3">
+                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V2.1.2">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="12" />
@@ -361,12 +361,24 @@
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Foreground="#D2E0F8" TextWrapping="Wrap" Style="{StaticResource CompactAwareText}" Text="{Binding DetectionStatus}" />
                     <WrapPanel Grid.Row="1" Margin="0,8,0,0">
-                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + F1 DPS 리셋" />
-                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + R 전체 리셋" />
+                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + R DPS 리셋" />
+                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + F1 전체 리셋" />
                         <TextBlock Foreground="#C5D4EE" Style="{StaticResource CompactAwareText}" Text="상세 정보는 더블클릭" />
                     </WrapPanel>
                 </Grid>
             </Border>
+            <Button Grid.RowSpan="7"
+                    MinWidth="82"
+                    Margin="0,0,118,16"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Background="#2F4768"
+                    Foreground="#E8F2FF"
+                    BorderBrush="#6A98D2"
+                    BorderThickness="1"
+                    Click="OpenCombatRecords_Click"
+                    Content="전투 기록"
+                    Style="{StaticResource CompactAwareButton}" />
             <Border Grid.RowSpan="7"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
