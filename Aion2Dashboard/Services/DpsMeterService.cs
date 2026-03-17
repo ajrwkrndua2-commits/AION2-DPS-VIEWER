@@ -85,12 +85,12 @@ public sealed class DpsMeterService : IDisposable
 
         if (!IsAdministrator())
         {
-            throw new InvalidOperationException("愿由ъ옄 沅뚰븳?쇰줈 ?ㅽ뻾?댁빞 DPS ?⑦궥 ?섏쭛???숈옉?⑸땲??");
+            throw new InvalidOperationException("관리자 권한으로 실행해야 DPS 패킷 수집이 동작합니다.");
         }
 
         if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "PacketProcessor.dll")))
         {
-            throw new FileNotFoundException("PacketProcessor.dll??李얠쓣 ???놁뒿?덈떎.");
+            throw new FileNotFoundException("PacketProcessor.dll을 찾을 수 없습니다.");
         }
 
         _bridge = new PacketProcessorBridge(serverPort);
@@ -113,15 +113,15 @@ public sealed class DpsMeterService : IDisposable
             _bridge = null;
             _packetLogger?.Dispose();
             _packetLogger = null;
-            throw new InvalidOperationException($"WinDivert ?쒖옉 ?ㅽ뙣: {ex.Message}", ex);
+            throw new InvalidOperationException($"WinDivert 시작 실패: {ex.Message}", ex);
         }
 
         IsRunning = true;
         _snapshotTimer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(1));
 
         var prefix = EnablePartyPacketLogging && !string.IsNullOrWhiteSpace(PartyLogFilePath)
-            ? $"DPS ?먮룞 ?섏쭛 ?쒖옉 / ?뚰떚 濡쒓렇 ??? {PartyLogFilePath}"
-            : "DPS ?먮룞 ?섏쭛 ?쒖옉";
+            ? $"DPS 자동 수집 시작 / 파티 로그 저장: {PartyLogFilePath}"
+            : "DPS 자동 수집 시작";
         StatusChanged?.Invoke(this, BuildStatusMessage(prefix));
     }
 
@@ -142,7 +142,7 @@ public sealed class DpsMeterService : IDisposable
         IsRunning = false;
         CombatPort = -1;
         _lastPublishedTargetKey = string.Empty;
-        StatusChanged?.Invoke(this, "DPS ?섏쭛??以묒??덉뒿?덈떎.");
+        StatusChanged?.Invoke(this, "DPS 수집을 중지했습니다.");
     }
 
     public void Reset()
@@ -164,7 +164,7 @@ public sealed class DpsMeterService : IDisposable
         _lastDamageUtc = DateTime.MinValue;
         PublishTarget(null);
         PublishSnapshot();
-        StatusChanged?.Invoke(this, BuildStatusMessage("DPS ?곗씠?곕? 珥덇린?뷀뻽?듬땲??"));
+        StatusChanged?.Invoke(this, BuildStatusMessage("DPS 데이터를 초기화했습니다."));
     }
 
     public IReadOnlyList<SkillUsageEntry> GetSkillUsage(int actorId, string? name = null)
@@ -190,7 +190,7 @@ public sealed class DpsMeterService : IDisposable
                 .Select(item => new
                 {
                     item.Skill.SkillCode,
-                    TotalDamage = item.Events.Sum(hit => hit.Damage),
+                    TotalDamage = item.Events.Sum(hit => (long)hit.Damage),
                     HitCount = item.Events.Length,
                     CritCount = item.Events.Count(hit => hit.IsCritical),
                     MaxHit = item.Events.Max(hit => hit.Damage)
@@ -302,7 +302,7 @@ public sealed class DpsMeterService : IDisposable
         var hit = new DamageEvent(now, total, (flags & 0x0100) != 0, targetId);
         _lastDamageUtc = now;
 
-        RegisterTargetHit(targetId, now);
+        RegisterTargetHit(targetId, now, total);
         TrackBossEncounter(targetId, now);
 
         lock (actor.SyncRoot)
@@ -323,9 +323,16 @@ public sealed class DpsMeterService : IDisposable
 
         var target = _targets.GetOrAdd(mobId, _ => new TargetRuntime());
         target.LastHitUtc = DateTime.UtcNow;
+        target.MobCode = mobCode;
 
         var mobInfo = _mobNameResolver.ResolveInfo(mobCode);
         target.IsBoss = isBoss || mobInfo?.IsBoss == true;
+        if (hp > 0)
+        {
+            var inferredMaxHp = hp + Math.Max(0L, target.DamageTaken);
+            target.MaxHp = Math.Max(target.MaxHp, Math.Max(hp, inferredMaxHp));
+            target.CurrentHp = hp;
+        }
 
         if (!string.IsNullOrWhiteSpace(mobInfo?.Name))
         {
@@ -391,7 +398,7 @@ public sealed class DpsMeterService : IDisposable
                         return null;
                     }
 
-                    var totalDamage = events.Sum(hit => hit.Damage);
+                    var totalDamage = events.Sum(hit => (long)hit.Damage);
                     var critCount = events.Count(hit => hit.IsCritical);
                     var duration = Math.Max(1.0, (events[^1].Timestamp - events[0].Timestamp).TotalSeconds);
 
@@ -547,7 +554,7 @@ public sealed class DpsMeterService : IDisposable
         }
 
         _lastAutoResetSuggestUtc = nowUtc;
-        ResetSuggested?.Invoke(this, "湲?怨듬갚 ?????꾪닾媛 媛먯??섏뼱 ?꾩껜 由ъ뀑??吏꾪뻾?덉뒿?덈떎.");
+        ResetSuggested?.Invoke(this, "긴 공백 이후 새 전투가 감지되어 전체 리셋을 진행했습니다.");
     }
 
     private TimeSpan ActiveDisplayRetention => TimeSpan.FromSeconds(ActiveDisplaySeconds);
@@ -596,6 +603,18 @@ public sealed class DpsMeterService : IDisposable
 
         RefreshBossEncounterState(DateTime.UtcNow);
 
+        if (!_activeBossTargetId.HasValue)
+        {
+            var fallbackBossTargetId = SelectRecentBossTargetId();
+            if (fallbackBossTargetId.HasValue)
+            {
+                _activeBossTargetId = fallbackBossTargetId.Value;
+                _activeBossLastHitUtc = _targets.TryGetValue(fallbackBossTargetId.Value, out var fallbackTarget)
+                    ? fallbackTarget.LastHitUtc
+                    : DateTime.UtcNow;
+            }
+        }
+
         if (_activeBossTargetId.HasValue)
         {
             return targetId == _activeBossTargetId.Value;
@@ -604,7 +623,7 @@ public sealed class DpsMeterService : IDisposable
         return _targets.TryGetValue(targetId, out var target) && target.IsBoss;
     }
 
-    private void RegisterTargetHit(int targetId, DateTime now)
+    private void RegisterTargetHit(int targetId, DateTime now, int damage)
     {
         if (targetId <= 0)
         {
@@ -616,6 +635,22 @@ public sealed class DpsMeterService : IDisposable
         if (_bossTargets.ContainsKey(targetId))
         {
             target.IsBoss = true;
+        }
+
+        if (damage <= 0)
+        {
+            return;
+        }
+
+        target.DamageTaken += damage;
+
+        if (target.MaxHp > 0)
+        {
+            target.CurrentHp = Math.Max(0, target.MaxHp - target.DamageTaken);
+        }
+        else if (target.CurrentHp > 0)
+        {
+            target.CurrentHp = Math.Max(0, target.CurrentHp - damage);
         }
     }
 
@@ -663,6 +698,16 @@ public sealed class DpsMeterService : IDisposable
         _activeBossLastHitUtc = DateTime.MinValue;
     }
 
+    private int? SelectRecentBossTargetId()
+    {
+        var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(Math.Max(6, CombatResetSeconds));
+        return _targets
+            .Where(pair => pair.Value.IsBoss && pair.Value.LastHitUtc >= cutoff)
+            .OrderByDescending(pair => pair.Value.LastHitUtc)
+            .Select(pair => (int?)pair.Key)
+            .FirstOrDefault();
+    }
+
     private TargetInfo? SelectCurrentTarget()
     {
         RefreshBossEncounterState(DateTime.UtcNow);
@@ -673,7 +718,10 @@ public sealed class DpsMeterService : IDisposable
             {
                 TargetId = _activeBossTargetId.Value,
                 Name = activeBoss.Name,
-                IsBoss = true
+                IsBoss = true,
+                CurrentHp = activeBoss.CurrentHp,
+                MaxHp = activeBoss.MaxHp,
+                DamageTaken = activeBoss.DamageTaken
             };
         }
 
@@ -684,7 +732,10 @@ public sealed class DpsMeterService : IDisposable
             {
                 TargetId = pair.Key,
                 Name = pair.Value.Name,
-                IsBoss = pair.Value.IsBoss
+                IsBoss = pair.Value.IsBoss,
+                CurrentHp = pair.Value.CurrentHp,
+                MaxHp = pair.Value.MaxHp,
+                DamageTaken = pair.Value.DamageTaken
             })
             .OrderByDescending(item => item.IsBoss)
             .ThenByDescending(item => _targets[item.TargetId].LastHitUtc)
@@ -719,7 +770,7 @@ public sealed class DpsMeterService : IDisposable
                 return null;
             }
 
-            var totalDamage = events.Sum(hit => hit.Damage);
+            var totalDamage = events.Sum(hit => (long)hit.Damage);
             var critCount = events.Count(hit => hit.IsCritical);
             var duration = Math.Max(1.0, (events[^1].Timestamp - events[0].Timestamp).TotalSeconds);
             var maxDamage = Math.Max(1L, actor.Skills.Values
@@ -738,12 +789,12 @@ public sealed class DpsMeterService : IDisposable
                 {
                     SkillCode = item.SkillCode,
                     SkillName = _skillNameResolver.Resolve(item.SkillCode),
-                    TotalDamage = item.Events.Sum(hit => hit.Damage),
+                    TotalDamage = item.Events.Sum(hit => (long)hit.Damage),
                     HitCount = item.Events.Length,
                     CritRate = item.Events.Length == 0 ? 0 : (double)item.Events.Count(hit => hit.IsCritical) / item.Events.Length,
                     MaxHit = item.Events.Max(hit => hit.Damage),
-                    DamageShare = totalDamage == 0 ? 0 : (double)item.Events.Sum(hit => hit.Damage) / totalDamage,
-                    DamageRatio = maxDamage == 0 ? 0 : (double)item.Events.Sum(hit => hit.Damage) / maxDamage
+                    DamageShare = totalDamage == 0 ? 0 : (double)item.Events.Sum(hit => (long)hit.Damage) / totalDamage,
+                    DamageRatio = maxDamage == 0 ? 0 : (double)item.Events.Sum(hit => (long)hit.Damage) / maxDamage
                 })
                 .OrderByDescending(item => item.TotalDamage)
                 .ToArray();
@@ -770,7 +821,10 @@ public sealed class DpsMeterService : IDisposable
             {
                 TargetId = _activeBossTargetId.Value,
                 Name = activeBoss.Name,
-                IsBoss = true
+                IsBoss = true,
+                CurrentHp = activeBoss.CurrentHp,
+                MaxHp = activeBoss.MaxHp,
+                DamageTaken = activeBoss.DamageTaken
             };
         }
 
@@ -780,7 +834,10 @@ public sealed class DpsMeterService : IDisposable
             {
                 TargetId = pair.Key,
                 Name = pair.Value.Name,
-                IsBoss = pair.Value.IsBoss
+                IsBoss = pair.Value.IsBoss,
+                CurrentHp = pair.Value.CurrentHp,
+                MaxHp = pair.Value.MaxHp,
+                DamageTaken = pair.Value.DamageTaken
             })
             .OrderByDescending(item => _targets[item.TargetId].LastHitUtc)
             .FirstOrDefault();
@@ -798,7 +855,7 @@ public sealed class DpsMeterService : IDisposable
             .Select(group => new
             {
                 TargetId = group.Key,
-                TotalDamage = group.Sum(hit => hit.Damage),
+                TotalDamage = group.Sum(hit => (long)hit.Damage),
                 LastHitUtc = group.Max(hit => hit.Timestamp)
             })
             .OrderByDescending(item => item.TotalDamage)
@@ -816,7 +873,10 @@ public sealed class DpsMeterService : IDisposable
             {
                 TargetId = bestTarget.TargetId,
                 Name = target.Name,
-                IsBoss = target.IsBoss
+                IsBoss = target.IsBoss,
+                CurrentHp = target.CurrentHp,
+                MaxHp = target.MaxHp,
+                DamageTaken = target.DamageTaken
             };
         }
 
@@ -879,6 +939,10 @@ public sealed class DpsMeterService : IDisposable
     {
         public string Name { get; set; } = string.Empty;
         public bool IsBoss { get; set; }
+        public int MobCode { get; set; }
+        public long CurrentHp { get; set; }
+        public long MaxHp { get; set; }
+        public long DamageTaken { get; set; }
         public DateTime LastHitUtc { get; set; }
     }
 

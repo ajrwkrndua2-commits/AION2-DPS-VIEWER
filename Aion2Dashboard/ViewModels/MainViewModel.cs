@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -11,11 +11,16 @@ namespace Aion2Dashboard.ViewModels;
 
 public sealed class MainViewModel : ObservableObject, IDisposable
 {
+    private const string DefaultLogUploadUrl = "https://discord.com/api/webhooks/1483389759488262305/sCsRiD4kK7-cAx7JNUlzmZYgOFq7Be0x0KKfrN5fNpDqHapHbrzo4dzVAinBZMqcP6CF";
+
     private readonly AtoolApiClient _atoolApiClient;
     private readonly DpsMeterService _dpsMeterService;
     private readonly OverlaySettingsStore _settingsStore;
     private readonly AdBannerService _adBannerService;
     private readonly UpdateCheckerService _updateCheckerService;
+    private readonly UpdateInstallerService _updateInstallerService;
+    private readonly LogUploadService _logUploadService;
+    private readonly CombatRecordStore _combatRecordStore;
     private readonly bool _isDistributionBuild;
     private readonly Dictionary<int, DpsPlayerRow> _rowsByActorId = new();
     private readonly Dictionary<string, DpsPlayerRow> _rowsByName = new(StringComparer.OrdinalIgnoreCase);
@@ -34,19 +39,22 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private double _cardOpacity = 0.82;
     private bool _isTopMost = true;
     private int _meterServerPort = 13328;
-    private string _resetHotkey = "Ctrl+F1";
-    private string _fullResetHotkey = "Ctrl+R";
+    private string _resetHotkey = "Ctrl+R";
+    private string _fullResetHotkey = "Ctrl+F1";
     private string _manualSelfName = string.Empty;
     private int _meterWindowSeconds = 300;
-    private int _combatResetSeconds = 20;
-    private int _searchResultSeconds = 30;
-    private int _activeDisplaySeconds = 2;
+    private int _combatResetSeconds = 180;
+    private int _searchResultSeconds = 180;
+    private int _activeDisplaySeconds = 30;
+    private int _combatRecordRetentionSeconds = 1800;
     private bool _bossOnlyMode;
     private bool _partyPacketLoggingEnabled;
     private bool _isCompactMode;
     private bool _autoUpdateCheckEnabled = true;
+    private string _logUploadUrl = string.Empty;
     private bool _preserveRowsAfterMeterReset;
     private string _currentTargetName = "타겟 대기 중";
+    private string _currentTargetHealthText = string.Empty;
     private bool _isBossTarget;
     private DpsPlayerRow? _pinnedSearchPlayer;
     private DateTime _pinnedSearchSetUtc = DateTime.MinValue;
@@ -56,6 +64,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _adDescription = string.Empty;
     private string _adButtonText = "열기";
     private string _adUrl = string.Empty;
+    private string _lastSavedCombatRecordKey = string.Empty;
 
     public MainViewModel(
         AtoolApiClient atoolApiClient,
@@ -68,11 +77,15 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _settingsStore = settingsStore;
         _adBannerService = new AdBannerService();
         _updateCheckerService = new UpdateCheckerService();
+        _updateInstallerService = new UpdateInstallerService();
+        _logUploadService = new LogUploadService();
+        _combatRecordStore = new CombatRecordStore();
         _isDistributionBuild = isDistributionBuild;
 
         SearchCommand = new AsyncRelayCommand(SearchAsync, CanSearch);
         RefreshServersCommand = new AsyncRelayCommand(LoadServersAsync);
-        CheckUpdateCommand = new AsyncRelayCommand(() => CheckForUpdatesImprovedAsync(showLatestMessage: true));
+        CheckUpdateCommand = new AsyncRelayCommand(() => RunAutoUpdateAsync(showLatestMessage: true));
+        UploadLogsCommand = new AsyncRelayCommand(UploadLogsAsync, () => !string.IsNullOrWhiteSpace(LogUploadUrl));
         ResetMeterCommand = new RelayCommand(ResetMeter);
         ResetAllCommand = new RelayCommand(ResetAll);
         OpenAdLinkCommand = new RelayCommand(OpenAdLink, () => !string.IsNullOrWhiteSpace(AdUrl));
@@ -91,10 +104,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<ServerOption> Servers { get; } = [];
     public ObservableCollection<ServerOption> FilteredServers { get; } = [];
     public ObservableCollection<DpsPlayerRow> LivePlayers { get; } = [];
+    public ObservableCollection<DpsPlayerRow> DisplayPlayers { get; } = [];
 
     public AsyncRelayCommand SearchCommand { get; }
     public AsyncRelayCommand RefreshServersCommand { get; }
     public AsyncRelayCommand CheckUpdateCommand { get; }
+    public AsyncRelayCommand UploadLogsCommand { get; }
     public RelayCommand ResetMeterCommand { get; }
     public RelayCommand ResetAllCommand { get; }
     public RelayCommand OpenAdLinkCommand { get; }
@@ -210,6 +225,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _currentTargetName, value);
     }
 
+    public string CurrentTargetHealthText
+    {
+        get => _currentTargetHealthText;
+        set => SetProperty(ref _currentTargetHealthText, value);
+    }
+
     public bool IsBossTarget
     {
         get => _isBossTarget;
@@ -294,7 +315,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _resetHotkey;
         set
         {
-            var normalized = NormalizeHotkey(value, "Ctrl+F1");
+            var normalized = NormalizeHotkey(value, "Ctrl+R");
             if (SetProperty(ref _resetHotkey, normalized))
             {
                 SaveSettings();
@@ -307,7 +328,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         get => _fullResetHotkey;
         set
         {
-            var normalized = NormalizeHotkey(value, "Ctrl+R");
+            var normalized = NormalizeHotkey(value, "Ctrl+F1");
             if (SetProperty(ref _fullResetHotkey, normalized))
             {
                 SaveSettings();
@@ -370,6 +391,19 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public int CombatRecordRetentionSeconds
+    {
+        get => _combatRecordRetentionSeconds;
+        set
+        {
+            var normalized = Math.Clamp(value, 60, 1800);
+            if (SetProperty(ref _combatRecordRetentionSeconds, normalized))
+            {
+                SaveSettings();
+            }
+        }
+    }
+
     public bool BossOnlyMode
     {
         get => _bossOnlyMode;
@@ -405,6 +439,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _isCompactMode, value))
             {
                 RaisePropertyChanged(nameof(CompactButtonText));
+                UpdateDisplayedPlayers();
                 SaveSettings();
             }
         }
@@ -463,6 +498,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         await TryLoadManualSelfProfileAsync();
         StartMeter();
         _ = CheckForUpdatesImprovedAsync();
+    }
+
+    public string LogUploadUrl
+    {
+        get => _logUploadUrl;
+        set
+        {
+            var normalized = value?.Trim() ?? string.Empty;
+            if (SetProperty(ref _logUploadUrl, normalized))
+            {
+                UploadLogsCommand.NotifyCanExecuteChanged();
+                SaveSettings();
+            }
+        }
+    }
+
+    public IReadOnlyList<CombatRecord> LoadCombatRecords()
+    {
+        return _combatRecordStore.LoadRecent(retentionSeconds: CombatRecordRetentionSeconds);
     }
 
     public async Task CheckForUpdatesAsync(bool showLatestMessage = false)
@@ -531,7 +585,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public void TriggerResetHotkey()
     {
         ResetMeter();
-        StatusText = $"미터를 초기화했습니다. 단축키 {ResetHotkey}";
+        StatusText = $"DPS를 초기화했습니다. 단축키: {ResetHotkey}";
     }
 
     public async Task CheckForUpdatesImprovedAsync(bool showLatestMessage = false)
@@ -601,6 +655,97 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public async Task RunAutoUpdateAsync(bool showLatestMessage = false)
+    {
+        try
+        {
+            var result = await _updateCheckerService.CheckForUpdateAsync();
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = result.Message;
+            });
+
+            if (!result.IsUpdateAvailable)
+            {
+                if (showLatestMessage)
+                {
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        MessageBox.Show(
+                            $"현재 최신 버전입니다.\n버전: v{AppVersion.Current}",
+                            "자동 업데이트",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
+                }
+
+                return;
+            }
+
+            var shouldInstall = false;
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var answer = MessageBox.Show(
+                    $"새 버전 {result.LatestVersion} 이 있습니다.\n현재 버전: v{AppVersion.Current}\n\n자동 업데이트를 시작할까요?",
+                    "자동 업데이트",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+                shouldInstall = answer == MessageBoxResult.Yes;
+            });
+
+            if (!shouldInstall)
+            {
+                return;
+            }
+
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = $"업데이트 파일 다운로드 중... {result.LatestVersion}";
+            });
+
+            var installResult = await _updateInstallerService.InstallAsync(result);
+            if (!installResult.Success)
+            {
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText = $"자동 업데이트 실패: {installResult.Message}";
+                    MessageBox.Show(
+                        $"자동 업데이트에 실패했습니다.\n{installResult.Message}",
+                        "자동 업데이트",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                });
+                return;
+            }
+
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = installResult.Message;
+                MessageBox.Show(
+                    "자동 업데이트를 시작합니다.\n프로그램을 종료한 뒤 새 버전으로 다시 실행합니다.",
+                    "자동 업데이트",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                Application.Current.Shutdown();
+            });
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = $"자동 업데이트 실패: {ex.Message}";
+                if (showLatestMessage)
+                {
+                    MessageBox.Show(
+                        $"자동 업데이트에 실패했습니다.\n{ex.Message}",
+                        "자동 업데이트",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            });
+        }
+    }
+
     public void SetStatusMessage(string message)
     {
         if (!string.IsNullOrWhiteSpace(message))
@@ -612,7 +757,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public void TriggerFullResetHotkey()
     {
         ResetAll();
-        StatusText = $"전체 초기화를 완료했습니다. 단축키 {FullResetHotkey}";
+        StatusText = $"전체 초기화를 완료했습니다. 단축키: {FullResetHotkey}";
     }
 
     public void ExecuteSearch()
@@ -684,6 +829,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        SaveCombatRecordIfAvailable("프로그램 종료");
         _dpsMeterService.SnapshotUpdated -= OnSnapshotUpdated;
         _dpsMeterService.StatusChanged -= OnMeterStatusChanged;
         _dpsMeterService.CharacterDetected -= OnCharacterDetected;
@@ -878,6 +1024,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             CurrentTargetName = target?.Name ?? "타겟 대기 중";
             IsBossTarget = target?.IsBoss == true;
+            CurrentTargetHealthText = FormatTargetHealth(target);
         });
     }
 
@@ -885,6 +1032,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
+            SaveCombatRecordIfAvailable("자동 리셋");
             ResetAll();
             StatusText = message;
         });
@@ -912,6 +1060,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetMeter()
     {
+        SaveCombatRecordIfAvailable("DPS 리셋");
         _dpsMeterService.Reset();
         _preserveRowsAfterMeterReset = true;
 
@@ -931,6 +1080,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         CurrentTargetName = "타겟 대기 중";
+        CurrentTargetHealthText = string.Empty;
         IsBossTarget = false;
         StatusText = "DPS 데이터만 초기화했습니다. 이름과 아툴 정보는 유지됩니다.";
         RaisePropertyChanged(nameof(TotalPartyDps));
@@ -940,6 +1090,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ResetAll()
     {
+        SaveCombatRecordIfAvailable("전체 리셋");
         _dpsMeterService.Reset();
         _preserveRowsAfterMeterReset = false;
         _rowsByActorId.Clear();
@@ -947,8 +1098,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _profileCache.Clear();
         _pendingProfileKeys.Clear();
         LivePlayers.Clear();
+        DisplayPlayers.Clear();
         _selfActorId = 0;
         CurrentTargetName = "타겟 대기 중";
+        CurrentTargetHealthText = string.Empty;
         IsBossTarget = false;
         StatusText = "전체 리셋을 완료했습니다. DPS 목록과 자동 조회 캐시를 모두 비웠습니다.";
         PinnedSearchPlayer = null;
@@ -1145,6 +1298,38 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             LivePlayers.Add(row);
         }
+
+        UpdateDisplayedPlayers();
+    }
+
+    private void UpdateDisplayedPlayers()
+    {
+        var source = IsCompactMode ? LivePlayers.Take(4) : LivePlayers.AsEnumerable();
+        DisplayPlayers.Clear();
+        foreach (var row in source)
+        {
+            DisplayPlayers.Add(row);
+        }
+    }
+
+    private static string FormatTargetHealth(TargetInfo? target)
+    {
+        if (target is null)
+        {
+            return string.Empty;
+        }
+
+        if (target.MaxHp <= 0)
+        {
+            return target.DamageTaken > 0
+                ? $"HP 추적 중 / 누적 피해 {target.DamageTaken:N0}"
+                : string.Empty;
+        }
+
+        var current = Math.Max(0L, target.CurrentHp);
+        var max = Math.Max(1L, target.MaxHp);
+        var ratio = (double)current / max;
+        return $"HP {current:N0}/{max:N0} ({ratio:P0})";
     }
 
     private void ApplyPartyHints()
@@ -1256,6 +1441,64 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void SaveCombatRecordIfAvailable(string reason)
+    {
+        var record = _dpsMeterService.CaptureCombatRecord(reason);
+        if (record is null || record.TotalDamage <= 0 || record.Participants.Count == 0)
+        {
+            return;
+        }
+
+        EnrichCombatRecord(record);
+        var recordKey = $"{record.EndedAtUtc.Ticks}:{record.TotalDamage}:{record.TargetName}:{reason}";
+        if (string.Equals(_lastSavedCombatRecordKey, recordKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastSavedCombatRecordKey = recordKey;
+        _combatRecordStore.Save(record, retentionSeconds: CombatRecordRetentionSeconds);
+    }
+
+    private void EnrichCombatRecord(CombatRecord record)
+    {
+        var totalDamage = Math.Max(1L, record.Participants.Sum(item => item.TotalDamage));
+        foreach (var participant in record.Participants)
+        {
+            participant.PartyShareRatio = (double)participant.TotalDamage / totalDamage;
+
+            if (participant.ActorId > 0 && _rowsByActorId.TryGetValue(participant.ActorId, out var liveRow))
+            {
+                ApplyParticipantRow(participant, liveRow);
+                continue;
+            }
+
+            var cached = _profileCache.Values.FirstOrDefault(profile =>
+                string.Equals(profile.Nickname, participant.Name, StringComparison.OrdinalIgnoreCase));
+            if (cached is not null)
+            {
+                participant.Server = cached.Server;
+                participant.Job = cached.Job;
+                participant.JobImageUrl = cached.JobImageUrl;
+                participant.CombatScore = cached.CombatScore;
+                participant.MajorTitles = cached.MajorTitles.Take(3).Select(ShortTitle).ToArray();
+                participant.MajorStigmas = cached.MajorStigmas.Take(4).ToArray();
+            }
+        }
+    }
+
+    private static void ApplyParticipantRow(CombatRecordParticipant participant, DpsPlayerRow row)
+    {
+        participant.Server = row.Server;
+        participant.Job = row.Job;
+        participant.JobImageUrl = row.JobImageUrl;
+        participant.CombatScore = row.CombatScore;
+        participant.IsSelf = row.IsSelf;
+        participant.IsPartyCandidate = row.IsPartyCandidate;
+        participant.MajorTitles = row.MajorTitles;
+        participant.MajorStigmas = row.MajorStigmas;
+    }
+
     private void RefreshFilteredServers()
     {
         var raceValue = SelectedRace == "마족" ? 2 : 1;
@@ -1334,13 +1577,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private void LoadSettings()
     {
         var settings = _settingsStore.Load();
+        var useLegacyDefaults =
+            string.Equals(settings.ResetHotkey, "Ctrl+F1", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(settings.FullResetHotkey, "Ctrl+R", StringComparison.OrdinalIgnoreCase);
         _windowOpacity = settings.WindowOpacity;
         _overlayOpacity = settings.OverlayOpacity;
         _cardOpacity = settings.CardOpacity;
         _isTopMost = settings.TopMost;
         _meterServerPort = settings.ServerPort;
-        _resetHotkey = NormalizeHotkey(settings.ResetHotkey, "Ctrl+F1");
-        _fullResetHotkey = NormalizeHotkey(settings.FullResetHotkey, "Ctrl+R");
+        _resetHotkey = NormalizeHotkey(useLegacyDefaults ? "Ctrl+R" : settings.ResetHotkey, "Ctrl+R");
+        _fullResetHotkey = NormalizeHotkey(useLegacyDefaults ? "Ctrl+F1" : settings.FullResetHotkey, "Ctrl+F1");
         _manualSelfName = settings.ManualSelfName?.Trim() ?? string.Empty;
         _meterWindowSeconds = Math.Clamp(
             settings.MeterWindowSeconds > 0 ? settings.MeterWindowSeconds : settings.MeterWindowMinutes * 60,
@@ -1349,10 +1595,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _combatResetSeconds = Math.Clamp(settings.CombatResetSeconds, 5, 180);
         _searchResultSeconds = Math.Clamp(settings.SearchResultSeconds, 5, 180);
         _activeDisplaySeconds = Math.Clamp(settings.ActiveDisplaySeconds, 1, 30);
+        _combatRecordRetentionSeconds = Math.Clamp(settings.CombatRecordRetentionSeconds, 60, 1800);
         _bossOnlyMode = settings.BossOnlyMode;
         _partyPacketLoggingEnabled = settings.PartyPacketLoggingEnabled;
         _isCompactMode = settings.CompactMode;
         _autoUpdateCheckEnabled = settings.AutoUpdateCheckEnabled;
+        _logUploadUrl = string.IsNullOrWhiteSpace(settings.LogUploadUrl)
+            ? DefaultLogUploadUrl
+            : settings.LogUploadUrl.Trim();
     }
 
     private void SaveSettings()
@@ -1372,11 +1622,43 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             SearchResultSeconds = SearchResultSeconds,
             MeterWindowMinutes = Math.Max(1, MeterWindowSeconds / 60),
             ActiveDisplaySeconds = ActiveDisplaySeconds,
+            CombatRecordRetentionSeconds = CombatRecordRetentionSeconds,
             BossOnlyMode = BossOnlyMode,
             PartyPacketLoggingEnabled = PartyPacketLoggingEnabled,
             CompactMode = IsCompactMode,
-            AutoUpdateCheckEnabled = AutoUpdateCheckEnabled
+            AutoUpdateCheckEnabled = AutoUpdateCheckEnabled,
+            LogUploadUrl = LogUploadUrl
         });
+    }
+
+    public async Task UploadLogsAsync()
+    {
+        try
+        {
+            StatusText = "로그 전송 준비 중...";
+            var result = await _logUploadService.UploadLogsAsync(LogUploadUrl);
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = result.Message;
+                MessageBox.Show(
+                    result.Message,
+                    "로그 전송",
+                    MessageBoxButton.OK,
+                    result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+            });
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                StatusText = $"로그 전송 실패: {ex.Message}";
+                MessageBox.Show(
+                    $"로그 전송 실패\n{ex.Message}",
+                    "로그 전송",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            });
+        }
     }
 
     private static string NormalizeHotkey(string? value, string fallback = "Ctrl+F1")
@@ -1526,3 +1808,6 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return new SolidColorBrush(Color.FromArgb((byte)(Math.Clamp(opacity, 0.0, 1.0) * 255), r, g, b));
     }
 }
+
+
+
