@@ -6,10 +6,10 @@
 
 ## 현재 버전
 
-- `v3.0.3`
+- `v3.0.4`
 - 기준 날짜: `2026-03-17`
 
-## v3.0.3 수정 사항
+## v3.0.4 수정 사항
 
 - 보스 패킷 정보와 `mobs.json` 보스 메타데이터를 함께 사용하도록 보강
 - 현재 보스 타겟 추적 및 타겟 HP 표시 추가
@@ -20,6 +20,7 @@
 - 업데이트 버튼을 자동 업데이트 실행 버튼으로 변경
 - 간소화 모드에서 업데이트 버튼 숨김
 - 간소화 모드에서 상태/타겟 요약 패널 숨김
+- 간소화 모드 카드 높이와 칩 크기를 줄여 상위 4명이 더 촘촘하게 보이도록 조정
 
 ## 주요 기능
 
@@ -52,36 +53,36 @@
 
 ## 실행 파일
 
-- 개발용 실행본: `dist-dev-3.0.3`
-- 배포용 실행본: `dist-release-3.0.3`
+- 개발용 실행본: `dist-dev-3.0.4`
+- 배포용 실행본: `dist-release-3.0.4`
 
 ## 실행 방법
 
 관리자 권한으로 실행하는 것을 권장합니다.
 
 ```powershell
-.\dist-release-3.0.3\Aion2Dashboard.exe
+.\dist-release-3.0.4\Aion2Dashboard.exe
 ```
 
 또는 개발용:
 
 ```powershell
-.\dist-dev-3.0.3\Aion2Dashboard.exe
+.\dist-dev-3.0.4\Aion2Dashboard.exe
 ```
 
 ## 빌드
 
 ```powershell
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-3.0.3
-dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-3.0.3 -p:DefineConstants=DISTRIBUTION
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-3.0.4
+dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-3.0.4 -p:DefineConstants=DISTRIBUTION
 ```
 
 ## 배포 파일
 
 GitHub 저장소에는 소스코드를 올리고, 실행 파일은 `Releases`에 올리는 방식을 권장합니다.
 
-- 배포용 zip: `DPSVIEWER-release-3.0.3.zip`
-- 개발용 zip: `DPSVIEWER-dev-3.0.3.zip`
+- 배포용 zip: `DPSVIEWER-release-3.0.4.zip`
+- 개발용 zip: `DPSVIEWER-dev-3.0.4.zip`
 
 ## 사용 방법
 
