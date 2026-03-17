@@ -4,13 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:Aion2Dashboard.Models"
-        xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="DPSVIEWER"
-        Width="648"
-        Height="716"
-        MinWidth="400"
-        MinHeight="420"
+        Width="620"
+        Height="500"
+        MinWidth="430"
+        MinHeight="300"
         AllowsTransparency="True"
         WindowStyle="None"
         ResizeMode="CanResize"
@@ -18,706 +17,525 @@
         Topmost="{Binding IsTopMost}"
         Opacity="{Binding WindowOpacityValue}">
     <Window.Resources>
-        <Style x:Key="CompactAwareButton" TargetType="Button">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Height" Value="28" />
-            <Setter Property="Padding" Value="6,0" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                    <Setter Property="FontSize" Value="10" />
-                    <Setter Property="Height" Value="24" />
-                    <Setter Property="Padding" Value="4,0" />
-                </DataTrigger>
-            </Style.Triggers>
+        <SolidColorBrush x:Key="PanelBrush" Color="#C5162130" />
+        <SolidColorBrush x:Key="PanelBorderBrush" Color="#4D6E97" />
+        <SolidColorBrush x:Key="PrimaryButtonBrush" Color="#28486D" />
+        <SolidColorBrush x:Key="PrimaryButtonBorderBrush" Color="#6DA8E6" />
+        <SolidColorBrush x:Key="SidebarButtonBrush" Color="#131F2E" />
+        <SolidColorBrush x:Key="SidebarButtonBorderBrush" Color="#2E4C72" />
+
+        <Style x:Key="WindowButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#EDF5FF" />
+            <Setter Property="Background" Value="#1B2A3E" />
+            <Setter Property="BorderBrush" Value="#4D739E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
-        <Style x:Key="CompactAwareText" TargetType="TextBlock">
+
+        <Style x:Key="SidebarButton" TargetType="Button" BasedOn="{StaticResource WindowButton}">
+            <Setter Property="Width" Value="38" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="{StaticResource SidebarButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SidebarButtonBorderBrush}" />
             <Setter Property="FontSize" Value="12" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                    <Setter Property="FontSize" Value="10" />
-                </DataTrigger>
-            </Style.Triggers>
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <Style x:Key="InfoChip" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Margin" Value="0,0,6,4" />
         </Style>
     </Window.Resources>
-    <Border Margin="10"
-            Background="{Binding OverlayBrush}"
-            BorderBrush="#8CCEF8FF"
-            BorderThickness="1"
-            CornerRadius="18">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
 
-            <Border Grid.Row="0"
-                    Background="#C0284470"
-                    CornerRadius="18,18,0,0"
-                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <Grid Margin="14,9,14,9">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="146" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock FontWeight="Bold" Foreground="#C7DEFF" Text="DPSVIEWER">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="26" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                            <Setter Property="FontSize" Value="20" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBlock Margin="10,6,0,0" Foreground="#C4D4F0" Text="V3.1.7">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="12" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                            <Setter Property="FontSize" Value="10" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Margin="0,0,8,0" Foreground="#D2E0FA" VerticalAlignment="Center" Style="{StaticResource CompactAwareText}" Text="투명도" />
-                        <Slider Width="90" Minimum="0.55" Maximum="1.0" Value="{Binding WindowOpacityValue, Mode=TwoWay}" />
-                    </StackPanel>
-                    <Button Grid.Column="2" Width="62" Margin="0,0,8,0" Style="{StaticResource CompactAwareButton}" Click="ToggleCompact_Click" Content="{Binding CompactButtonText}" />
-                    <StackPanel Grid.Column="3" Orientation="Horizontal">
-                        <Button Width="38" Margin="0,0,6,0" Style="{StaticResource CompactAwareButton}" Click="OpenSettings_Click" Content="설정" />
-                        <Button Width="30" Margin="0,0,6,0" Style="{StaticResource CompactAwareButton}" Click="Minimize_Click" Content="-" />
-                        <Button Width="30" Style="{StaticResource CompactAwareButton}" Click="Close_Click" Content="X" />
-                    </StackPanel>
-                </Grid>
-            </Border>
+    <Grid>
+        <Border Margin="10,10,28,28"
+                Background="#A60E1723"
+                BorderBrush="#8CCEF8FF"
+                BorderThickness="1"
+                CornerRadius="22">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-            <Border Grid.Row="1" Margin="12,8,12,0" Padding="10,8" CornerRadius="12" Background="#B91D2A3C" BorderBrush="#4A79AF" BorderThickness="1">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="62" />
-                        <ColumnDefinition Width="118" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ComboBox Grid.Column="0" Margin="0,0,10,0" Height="30" ItemsSource="{Binding RaceOptions}" SelectedItem="{Binding SelectedRace}" />
-                    <ComboBox Grid.Column="1" Margin="0,0,10,0" Height="30" ItemsSource="{Binding FilteredServers}" SelectedItem="{Binding SelectedServer}" DisplayMemberPath="Name" />
-                    <TextBox Grid.Column="2" Height="30" VerticalContentAlignment="Center" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" KeyDown="SearchKeyword_KeyDown" />
-                    <Button Grid.Column="3" Margin="10,0,0,0" Width="58" Style="{StaticResource CompactAwareButton}" Command="{Binding SearchCommand}" Content="검색" />
-                </Grid>
-            </Border>
+                <Border Grid.Column="0"
+                        Padding="0,10,0,10"
+                        Background="#73111A26"
+                        BorderBrush="#355173"
+                        BorderThickness="0,0,1,0"
+                        CornerRadius="22,0,0,22">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-            <Border Grid.Row="2" Margin="12,10,12,0" Padding="12,10" CornerRadius="12" Background="#A61D2B3D" BorderBrush="#476A96" BorderThickness="1">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
+                        <StackPanel Grid.Row="0" HorizontalAlignment="Center">
+                            <Button Style="{StaticResource SidebarButton}"
+                                    Command="{Binding RefreshServersCommand}"
+                                    ToolTip="새로고침"
+                                    Content="새" />
+                            <Button Style="{StaticResource SidebarButton}"
+                                    Click="OpenCombatRecords_Click"
+                                    ToolTip="전투 기록"
+                                    Content="기" />
+                            <Button Style="{StaticResource SidebarButton}"
+                                    Command="{Binding CheckUpdateCommand}"
+                                    ToolTip="{Binding UpdateButtonToolTip}">
+                                <Grid Width="20" Height="20">
+                                    <TextBlock HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Foreground="#EDF5FF"
+                                               Text="업" />
+                                    <Ellipse Width="8"
+                                             Height="8"
+                                             HorizontalAlignment="Right"
+                                             VerticalAlignment="Top"
+                                             Margin="0,-1,-1,0"
+                                             Fill="#FF5252"
+                                             Stroke="#FFF5F5"
+                                             StrokeThickness="1">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasUpdateNotification}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                </Grid>
+                            </Button>
+                            <Button Style="{StaticResource SidebarButton}"
+                                    Click="OpenSettings_Click"
+                                    ToolTip="설정"
+                                    Content="설" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" HorizontalAlignment="Center">
+                            <Button Style="{StaticResource SidebarButton}"
+                                    Click="ToggleCompact_Click"
+                                    ToolTip="{Binding CompactButtonText}"
+                                    Content="간" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Foreground="#D3E1FB" TextWrapping="Wrap" Style="{StaticResource CompactAwareText}" Text="{Binding StatusText}" />
-                    <WrapPanel Grid.Row="1" Margin="0,8,0,0">
-                        <Border Margin="0,0,8,6" Padding="8,4" CornerRadius="10" Background="#354A67">
-                            <TextBlock Foreground="#E0ECFF" Style="{StaticResource CompactAwareText}" Text="{Binding MeterModeText}" />
-                        </Border>
-                        <Border Margin="0,0,8,6" Padding="10,5" CornerRadius="10" Background="{Binding TargetBrush}" BorderBrush="{Binding TargetBorderBrush}" BorderThickness="1">
-                            <StackPanel>
+
+                    <Border Grid.Row="0"
+                            Background="#9F213557"
+                            CornerRadius="0,22,0,0"
+                            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        <Grid Margin="12,8,12,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock FontSize="18"
+                                           FontWeight="Bold"
+                                           Foreground="#D7E8FF"
+                                           Text="DPSVIEWER" />
+                                <TextBlock Margin="7,3,0,0"
+                                           Foreground="#AFC7E9"
+                                           FontSize="10"
+                                           Text="V4.0.16" />
+                                <Border Margin="10,0,0,0"
+                                        Padding="8,2"
+                                        Background="#24152131"
+                                        BorderBrush="#40658D"
+                                        BorderThickness="1"
+                                        CornerRadius="9">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse Width="8"
+                                                 Height="8"
+                                                 VerticalAlignment="Center"
+                                                 Fill="{Binding DetectionIndicatorBrush}" />
+                                        <TextBlock Margin="6,0,0,0"
+                                                   Foreground="#DCEBFF"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding DetectionStatus}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock Margin="0,0,6,0"
+                                           Foreground="#D2E0FA"
+                                           VerticalAlignment="Center"
+                                           FontSize="10"
+                                           Text="투명도" />
+                                <Slider Width="86"
+                                        Minimum="0.55"
+                                        Maximum="1.0"
+                                        Value="{Binding WindowOpacityValue, Mode=TwoWay}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right">
+                                <Button Style="{StaticResource WindowButton}"
+                                        Margin="0,0,4,0"
+                                        Click="Minimize_Click"
+                                        Content="-" />
+                                <Button Style="{StaticResource WindowButton}"
+                                        Click="Close_Click"
+                                        Content="X" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Margin="10,10,10,0"
+                            Padding="10,8"
+                            Background="#A3162030"
+                            BorderBrush="{StaticResource PanelBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="14">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <WrapPanel>
+                            <Border Style="{StaticResource InfoChip}" Background="#354A67">
+                                <TextBlock Foreground="#E0ECFF" FontSize="11" Text="{Binding MeterModeText}" />
+                            </Border>
+                            <Border Style="{StaticResource InfoChip}"
+                                    Background="{Binding TargetBrush}"
+                                    BorderBrush="{Binding TargetBorderBrush}"
+                                    BorderThickness="1">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Foreground="#EFF6FF" FontSize="10" FontWeight="SemiBold" Text="{Binding TargetBadgeText}" />
                                     <TextBlock Margin="8,0,0,0" Foreground="White" FontSize="11" FontWeight="SemiBold" Text="{Binding CurrentTargetName}" />
                                 </StackPanel>
-                                <TextBlock Margin="0,4,0,0" Foreground="#F6D277" FontSize="10" Text="{Binding CurrentTargetHealthText}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Margin="0,0,8,6" Padding="8,4" CornerRadius="10" Background="#453654">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Foreground="#E0E8FF" Style="{StaticResource CompactAwareText}" Text="파티 DPS" />
-                                <TextBlock Margin="8,0,0,0" Foreground="#FFD96A" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="{Binding TotalPartyDps, StringFormat=N0}" />
-                            </StackPanel>
-                        </Border>
-                    </WrapPanel>
-                    <Button Grid.RowSpan="2"
-                            Grid.Column="1"
-                            MinWidth="98"
-                            Margin="12,0,0,0"
-                            VerticalAlignment="Center"
-                            Background="#30527A"
-                            Foreground="#E8F2FF"
-                            BorderBrush="#6A98D2"
+                            </Border>
+                            <Border Style="{StaticResource InfoChip}" Background="#453654">
+                                <TextBlock Foreground="#FFD96A" FontSize="11" FontWeight="SemiBold" Text="{Binding TotalPartyDps, StringFormat=PARTY DPS {0:N0}}" />
+                            </Border>
+                            <Border Style="{StaticResource InfoChip}" Background="#264B3B">
+                                <TextBlock Foreground="#B9F4CE" FontSize="11" Text="{Binding CurrentTargetHealthText}" />
+                            </Border>
+                        </WrapPanel>
+                    </Border>
+
+                    <Border Grid.Row="2"
+                            Margin="10,10,10,8"
+                            Padding="8"
+                            Background="#9918212F"
+                            BorderBrush="#4D719D"
                             BorderThickness="1"
-                            Command="{Binding CheckUpdateCommand}"
-                            Content="자동 업데이트">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource CompactAwareButton}">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="3" Margin="12,8,12,0" Padding="10" CornerRadius="14" Background="#B6283448" BorderBrush="#5C8FD0" BorderThickness="1" MouseLeftButtonDown="PinnedSearchCard_MouseLeftButtonDown">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding PinnedSearchPlayer}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid DataContext="{Binding PinnedSearchPlayer}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="60" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid Width="44" Height="44" VerticalAlignment="Top">
-                        <Border Background="#2A4D7C" CornerRadius="22" BorderBrush="#7EB2FF" BorderThickness="1" />
-                        <Image Source="{Binding JobImageUrl}" Stretch="Uniform" Margin="5" />
-                    </Grid>
-                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                        <DockPanel LastChildFill="False">
-                            <TextBlock DockPanel.Dock="Left" Foreground="White" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" Text="{Binding DisplayName}" />
-                            <WrapPanel DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center">
-                                <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#4375B8"><TextBlock Foreground="#F1F7FF" FontSize="10" FontWeight="SemiBold" Text="SEARCH" /></Border>
-                                <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#6A5536"><TextBlock Foreground="#FFE39A" FontSize="11" Text="{Binding Server}" /></Border>
-                                <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#66417D"><TextBlock Foreground="#F0C6FF" FontSize="11" Text="{Binding Job}" /></Border>
-                                <Border Padding="7,1" CornerRadius="8" Background="#37537F"><TextBlock Foreground="#C6DAFF" FontSize="11" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" /></Border>
-                            </WrapPanel>
-                        </DockPanel>
-                        <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding MajorTitles}">
-                            <ItemsControl.Style>
-                                <Style TargetType="ItemsControl">
+                            CornerRadius="18">
+                        <ListView x:Name="LivePlayersList"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  ItemsSource="{Binding DisplayPlayers}"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  MouseDoubleClick="LivePlayersList_MouseDoubleClick">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,0,6" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                            <Setter Property="Margin" Value="0,0,0,3" />
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </ItemsControl.Style>
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#56401F"><TextBlock Foreground="#FFE1A3" FontSize="11" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <ItemsControl ItemsSource="{Binding MajorStigmas}">
-                            <ItemsControl.Style>
-                                <Style TargetType="ItemsControl">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ItemsControl.Style>
-                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#284635"><TextBlock Foreground="#9FF5C8" FontSize="9" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Grid>
-            </Border>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:DpsPlayerRow}">
+                                    <Border Padding="8"
+                                            BorderThickness="1"
+                                            CornerRadius="12">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#CB2B3748" />
+                                                <Setter Property="BorderBrush" Value="#5376A1" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPartyCandidate}" Value="True">
+                                                        <Setter Property="Background" Value="#CE32506C" />
+                                                        <Setter Property="BorderBrush" Value="#79BBFF" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsSelf}" Value="True">
+                                                        <Setter Property="Background" Value="#CC36586A" />
+                                                        <Setter Property="BorderBrush" Value="#8AE1AF" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                        <Setter Property="Padding" Value="6" />
+                                                        <Setter Property="CornerRadius" Value="10" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
 
-            <Border Grid.Row="4" Margin="12,10,12,10" Padding="10" CornerRadius="14" Background="#B1243143" BorderBrush="#4D719D" BorderThickness="1">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Foreground="#C7D8F9" FontSize="12" TextWrapping="Wrap" Text="실시간 DPS 목록입니다. 캐릭터를 더블클릭하면 아툴 정보와 스킬 상세가 열립니다.">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <ListView x:Name="LivePlayersList" Grid.Row="1" Margin="0,8,0,0" Background="Transparent" BorderThickness="0" ItemsSource="{Binding DisplayPlayers}" MouseDoubleClick="LivePlayersList_MouseDoubleClick">
-                        <ListView.Style>
-                            <Style TargetType="ListView">
-                                <Setter Property="Margin" Value="0,8,0,0" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                        <Setter Property="Margin" Value="0" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ListView.Style>
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="Padding" Value="0" />
-                                <Setter Property="Margin" Value="0,0,0,8" />
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter Property="Margin" Value="0" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:DpsPlayerRow}">
-                                <Border Padding="12" BorderThickness="1" CornerRadius="12">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#C9304056" />
-                                            <Setter Property="BorderBrush" Value="#47688F" />
-                                            <Setter Property="Padding" Value="12" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsPartyCandidate}" Value="True"><Setter Property="Background" Value="#CC35506D" /><Setter Property="BorderBrush" Value="#7CB7FF" /></DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSelf}" Value="True"><Setter Property="Background" Value="#CC375667" /><Setter Property="BorderBrush" Value="#8BE0AF" /></DataTrigger>
-                                                <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                    <Setter Property="Padding" Value="7,5" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid Width="36" Height="36" VerticalAlignment="Top">
-                                            <Grid.Style>
-                                                <Style TargetType="Grid">
-                                                    <Setter Property="Width" Value="36" />
-                                                    <Setter Property="Height" Value="36" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                            <Setter Property="Width" Value="28" />
-                                                            <Setter Property="Height" Value="28" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Grid.Style>
-                                            <Border Background="#2A4D7C" CornerRadius="18" BorderBrush="#7EB2FF" BorderThickness="1">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                            </Border>
-                                            <Image Source="{Binding JobImageUrl}" Stretch="Uniform" Margin="4">
-                                                <Image.Style>
-                                                    <Style TargetType="Image">
-                                                        <Setter Property="Margin" Value="4" />
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                <Setter Property="Margin" Value="1" />
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Image.Style>
-                                            </Image>
-                                            <Grid RenderTransformOrigin="0.5,0.5">
-                                                <Grid.Style>
-                                                    <Style TargetType="Grid">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </Style>
-                                                </Grid.Style>
-                                                <Grid.RenderTransform>
-                                                    <RotateTransform Angle="45" />
-                                                </Grid.RenderTransform>
-                                                <Border Width="18"
-                                                        Height="18"
-                                                        CornerRadius="2"
-                                                        Background="{Binding JobAccentBrush}"
-                                                        BorderBrush="{Binding JobAccentBorderBrush}"
-                                                        BorderThickness="1.3"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center" />
-                                                <Border Width="8"
-                                                        Height="8"
-                                                        CornerRadius="1.5"
-                                                        Background="#10151F"
-                                                        BorderBrush="{Binding JobAccentBorderBrush}"
-                                                        BorderThickness="0.8"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center" />
-                                            </Grid>
-                                        </Grid>
-                                        <StackPanel Grid.Column="1" Margin="10,0,12,0" VerticalAlignment="Center">
-                                            <StackPanel.Style>
-                                                <Style TargetType="StackPanel">
-                                                    <Setter Property="Margin" Value="10,0,12,0" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                            <Setter Property="Margin" Value="8,0,0,0" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </StackPanel.Style>
-                                            <DockPanel LastChildFill="False">
-                                                <TextBlock DockPanel.Dock="Left" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" Text="{Binding DisplayName}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="FontSize" Value="16" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="FontSize" Value="13" /></DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <Border DockPanel.Dock="Left" Margin="8,0,0,0" Padding="6,1" CornerRadius="8" Background="#6A5536">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                    <TextBlock Foreground="#FFE39A" FontSize="10" Text="{Binding CompactServerLabel}" />
-                                                </Border>
-                                                <WrapPanel DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center">
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#2E5A40">
-                                                        <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsSelf}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
-                                                        <TextBlock Foreground="#D3FFE1" FontSize="10" FontWeight="SemiBold" Text="ME" />
-                                                    </Border>
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#376692">
-                                                        <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding IsPartyCandidate}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
-                                                        <TextBlock Foreground="#E4F1FF" FontSize="10" FontWeight="SemiBold" Text="PARTY" />
-                                                    </Border>
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#6A5536">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <TextBlock Foreground="#FFE39A" FontSize="11" Text="{Binding Server}" />
-                                                    </Border>
-                                                    <Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#66417D">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <TextBlock Foreground="#F0C6FF" FontSize="11" Text="{Binding Job}" />
-                                                    </Border>
-                                                    <Border Padding="7,1" CornerRadius="8" Background="#37537F">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <TextBlock Foreground="#C6DAFF" FontSize="11" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
-                                                    </Border>
-                                                </WrapPanel>
-                                            </DockPanel>
-                                            <Border Margin="0,4,0,0" Padding="7,2" CornerRadius="8" Background="#37537F" HorizontalAlignment="Left">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock Foreground="#C6DAFF" FontSize="10" FontWeight="SemiBold" Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
-                                            </Border>
-                                            <WrapPanel Margin="0,6,0,0">
-                                                <WrapPanel.Style>
-                                                    <Style TargetType="WrapPanel">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                        <Setter Property="Margin" Value="0,6,0,0" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                                <Setter Property="Margin" Value="0,4,0,0" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </WrapPanel.Style>
-                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#29486A">
-                                                    <TextBlock Foreground="#8ED6FF" FontWeight="SemiBold" Text="{Binding Dps, StringFormat=DPS {0:N0}}">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="FontSize" Value="10" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="FontSize" Value="9" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Border>
-                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#645224">
-                                                    <TextBlock Foreground="#FFD96A" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="FontSize" Value="10" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="FontSize" Value="9" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Border>
-                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#5A2F6D">
-                                                    <TextBlock Foreground="#F2C2FF" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="FontSize" Value="10" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="FontSize" Value="9" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Border>
-                                                <Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#285042">
-                                                    <TextBlock Foreground="#A5F5CA" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="FontSize" Value="10" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="FontSize" Value="9" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Border>
-                                            </WrapPanel>
-                                            <ItemsControl Margin="0,6,0,0" ItemsSource="{Binding MajorTitles}">
-                                                <ItemsControl.Style><Style TargetType="ItemsControl"><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></ItemsControl.Style>
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,6,4" Padding="7,2" CornerRadius="8" Background="#56401F"><TextBlock Foreground="#FFE1A3" FontSize="11" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <ItemsControl ItemsSource="{Binding MajorStigmas}">
-                                                <ItemsControl.Style><Style TargetType="ItemsControl"><Style.Triggers><DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style></ItemsControl.Style>
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate><DataTemplate><Border Margin="0,0,6,0" Padding="7,1" CornerRadius="8" Background="#284635"><TextBlock Foreground="#9FF5C8" FontSize="9" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                        <Grid Grid.Column="2" Width="188" Margin="10,0,0,0" VerticalAlignment="Center">
-                                            <Grid.Style>
-                                                <Style TargetType="Grid">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                            <Setter Property="Width" Value="176" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Grid.Style>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,6">
-                                                <TextBlock Foreground="#8ED6FF" FontSize="10" FontWeight="Bold" Text="{Binding Dps, StringFormat=DPS {0:N0}}" />
-                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding DpsRatio}" Background="#243A56" Foreground="#67C3FF" BorderThickness="0" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
-                                                <TextBlock Foreground="#FFD96A" FontSize="10" FontWeight="Bold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" />
-                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding TotalDamageRatio}" Background="#51441E" Foreground="#FFD96A" BorderThickness="0" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,0">
-                                                <TextBlock Foreground="#F2C2FF" FontSize="10" FontWeight="Bold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}" />
-                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding PartyShareRatio}" Background="#3E284E" Foreground="#DD95FF" BorderThickness="0" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Row="1" Grid.Column="1">
-                                                <TextBlock Foreground="#A5F5CA" FontSize="10" FontWeight="Bold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}" />
-                                                <ProgressBar Height="8" Margin="0,4,0,0" Minimum="0" Maximum="1" Value="{Binding CritRate}" Background="#27483D" Foreground="#8AE1B7" BorderThickness="0" />
+
+                                            <Grid Width="34" Height="34" VerticalAlignment="Top">
+                                                <Border Background="#213551"
+                                                        CornerRadius="17"
+                                                        BorderBrush="#79B6FF"
+                                                        BorderThickness="1" />
+                                                <Grid Margin="5">
+                                                    <Image Source="{Binding JobImageUrl}" Stretch="Uniform">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasJobImage}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+                                                    <Border Background="{Binding JobAccentBrush}"
+                                                            BorderBrush="{Binding JobAccentBorderBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="10">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasJobImage}" Value="False">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="White"
+                                                                   FontSize="13"
+                                                                   FontWeight="Bold"
+                                                                   Text="{Binding JobAccentText}" />
+                                                    </Border>
+                                                </Grid>
+                                            </Grid>
+
+                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                <DockPanel LastChildFill="False">
+                                                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                                        <TextBlock Foreground="White"
+                                                                   FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Text="{Binding DisplayName}" />
+                                                        <TextBlock Margin="6,1,0,0"
+                                                                   Foreground="#D7C9FF"
+                                                                   FontSize="10"
+                                                                   Text="{Binding CompactServerLabel}" />
+                                                    </StackPanel>
+                                                    <WrapPanel DockPanel.Dock="Right">
+                                                        <Border Style="{StaticResource InfoChip}" Background="#37537F">
+                                                            <TextBlock Foreground="#C6DAFF"
+                                                                       FontSize="10"
+                                                                       Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
+                                                        </Border>
+                                                    </WrapPanel>
+                                                </DockPanel>
+
+                                                <Grid Margin="0,5,0,0">
+                                                    <WrapPanel VerticalAlignment="Center">
+                                                        <WrapPanel.Style>
+                                                            <Style TargetType="WrapPanel">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </WrapPanel.Style>
+                                                        <Border Style="{StaticResource InfoChip}" Background="#274B72">
+                                                            <TextBlock Foreground="#8ED6FF" FontSize="10" FontWeight="SemiBold" Text="{Binding Dps, StringFormat=DPS {0:N0}}" />
+                                                        </Border>
+                                                        <Border Style="{StaticResource InfoChip}" Background="#6A5821">
+                                                            <TextBlock Foreground="#FFD96A" FontSize="10" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" />
+                                                        </Border>
+                                                        <Border Style="{StaticResource InfoChip}" Background="#5A2F6D">
+                                                            <TextBlock Foreground="#F2C2FF" FontSize="10" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}" />
+                                                        </Border>
+                                                        <Border Style="{StaticResource InfoChip}" Background="#275042">
+                                                            <TextBlock Foreground="#A5F5CA" FontSize="10" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}" />
+                                                        </Border>
+                                                    </WrapPanel>
+
+                                                    <Grid VerticalAlignment="Center">
+                                                        <Grid.Style>
+                                                            <Style TargetType="Grid">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Grid.Style>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="DPS" />
+                                                                <TextBlock DockPanel.Dock="Right" Foreground="#8ED6FF" FontSize="9" FontWeight="SemiBold" Text="{Binding Dps, StringFormat={}{0:N0}}" />
+                                                            </DockPanel>
+                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding DpsRatio}" Foreground="#64BEFF" Background="#24344D" />
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="누적" />
+                                                                <TextBlock DockPanel.Dock="Right" Foreground="#FFD96A" FontSize="9" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat={}{0:N0}}" />
+                                                            </DockPanel>
+                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding TotalDamageRatio}" Foreground="#F0C54C" Background="#3A321F" />
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="지분" />
+                                                                <TextBlock DockPanel.Dock="Right" Foreground="#F2C2FF" FontSize="9" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat={}{0:P0}}" />
+                                                            </DockPanel>
+                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding PartyShareRatio}" Foreground="#B561E9" Background="#362444" />
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="3">
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="치명" />
+                                                                <TextBlock DockPanel.Dock="Right" Foreground="#A5F5CA" FontSize="9" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat={}{0:P0}}" />
+                                                            </DockPanel>
+                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding CritRate}" Foreground="#75E7A2" Background="#1F3D30" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Grid>
                                             </StackPanel>
                                         </Grid>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="5" Margin="12,0,12,10" Padding="12,10" CornerRadius="14" Background="#B42A3E57" BorderBrush="#6C9FDC" BorderThickness="1">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsAdBannerVisible}" Value="False">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Border Padding="8,3" CornerRadius="9" Background="#355F9B" VerticalAlignment="Center">
-                        <TextBlock Foreground="#F4F8FF" FontSize="10" FontWeight="Bold" Text="{Binding AdBadge}" />
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
                     </Border>
-                    <StackPanel Grid.Column="1" Margin="10,0,12,0">
-                        <TextBlock Foreground="White" FontSize="13" FontWeight="SemiBold" Text="{Binding AdTitle}" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Margin="0,3,0,0" Foreground="#D4E4FF" FontSize="11" Text="{Binding AdDescription}" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                    <Button Grid.Column="2" MinWidth="72" Style="{StaticResource CompactAwareButton}" Command="{Binding OpenAdLinkCommand}" Content="{Binding AdButtonText}" />
-                </Grid>
-            </Border>
 
-            <Border Grid.Row="6" Background="#C0162231" CornerRadius="0,0,18,18" Padding="12,10">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Foreground="#D2E0F8" TextWrapping="Wrap" Style="{StaticResource CompactAwareText}" Text="{Binding DetectionStatus}" />
-                    <WrapPanel Grid.Row="1" Margin="0,8,0,0">
-                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + R DPS 리셋" />
-                        <TextBlock Margin="0,0,16,0" Foreground="#F0F6FF" FontWeight="Bold" Style="{StaticResource CompactAwareText}" Text="CTRL + F1 전체 리셋" />
-                        <TextBlock Foreground="#C5D4EE" Style="{StaticResource CompactAwareText}" Text="상세 정보는 더블클릭" />
-                    </WrapPanel>
+                    <Border Grid.Row="3"
+                            Margin="10,0,10,10"
+                            Padding="6,4"
+                            Background="#64152030"
+                            BorderBrush="#385170"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Left"
+                                       Foreground="#D9E6FF"
+                                       FontSize="10"
+                                       Text="{Binding DetectionStatus}" />
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock Foreground="#A8BAD7"
+                                           FontSize="10"
+                                           Text="{Binding ResetHotkey, StringFormat={}{0} DPS 리셋}" />
+                                <TextBlock Margin="10,0,0,0"
+                                           Foreground="#A8BAD7"
+                                           FontSize="10"
+                                           Text="{Binding FullResetHotkey, StringFormat={}{0} 전체 리셋}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
                 </Grid>
-            </Border>
-            <Button Grid.RowSpan="7"
-                    MinWidth="86"
-                    Margin="0,0,126,16"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Background="#2F4768"
-                    Foreground="#E8F2FF"
-                    BorderBrush="#6A98D2"
-                    BorderThickness="1"
-                    Click="OpenCombatRecords_Click"
-                    Content="전투 기록">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource CompactAwareButton}">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsCompactMode}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <Border Grid.RowSpan="7"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="0,0,14,14"
-                    Padding="6,4"
-                    CornerRadius="12"
-                    Background="#365A85"
-                    BorderBrush="#9DCCFF"
-                    BorderThickness="1"
-                    Opacity="0.98">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Margin="0,0,6,0"
-                               VerticalAlignment="Center"
-                               Foreground="#EAF4FF"
-                               FontSize="10"
-                               FontWeight="SemiBold"
-                               Text="크기 조절" />
-                    <Grid Width="26" Height="26">
-                        <primitives:Thumb DragDelta="ResizeThumb_DragDelta"
-                                          Cursor="SizeNWSE"
-                                          Background="Transparent" />
-                        <Path Data="M7,20 L20,7 M11,20 L20,11 M15,20 L20,15"
-                              Stroke="#EAF4FF"
-                              StrokeThickness="1.8"
-                              StrokeStartLineCap="Round"
-                              StrokeEndLineCap="Round" />
-                    </Grid>
-                </StackPanel>
-            </Border>
-        </Grid>
-    </Border>
+            </Grid>
+        </Border>
+
+        <Thumb Width="74"
+               Height="30"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom"
+               Margin="0,0,6,6"
+               Background="Transparent"
+               DragDelta="ResizeThumb_DragDelta">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="#355C8E"
+                            BorderBrush="#8CC5FF"
+                            BorderThickness="1"
+                            CornerRadius="12">
+                        <Grid Margin="8,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center"
+                                       Foreground="#EAF3FF"
+                                       FontSize="10"
+                                       Text="크기 조절" />
+                            <Border Grid.Column="1"
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Background="#EAF3FF"
+                                    CornerRadius="3">
+                                <Path Stroke="#4B74A4" StrokeThickness="1.2" Data="M3,13 L13,3 M7,13 L13,7 M10,13 L13,10" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+    </Grid>
 </Window>
 

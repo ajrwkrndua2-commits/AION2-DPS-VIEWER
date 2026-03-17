@@ -1,0 +1,74 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $version = "${{ github.ref_name }}"
+          }
+          else {
+            $version = "manual-${{ github.run_number }}"
+          }
+          $plain = $version.TrimStart('v')
+          "tag_name=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "plain_version=$plain" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Restore
+        run: dotnet restore .\Aion2Dashboard\Aion2Dashboard.csproj
+
+      - name: Build
+        run: dotnet build .\Aion2Dashboard\Aion2Dashboard.csproj -c Release --no-restore
+
+      - name: Publish dev build
+        run: dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-dev-${{ steps.version.outputs.plain_version }} --no-build
+
+      - name: Publish distribution build
+        run: dotnet publish .\Aion2Dashboard\Aion2Dashboard.csproj -c Release -o .\dist-release-${{ steps.version.outputs.plain_version }} -p:DefineConstants=DISTRIBUTION --no-build
+
+      - name: Create zip packages
+        shell: pwsh
+        run: |
+          Compress-Archive -Path ".\dist-dev-${{ steps.version.outputs.plain_version }}\*" -DestinationPath ".\DPSVIEWER-dev-${{ steps.version.outputs.plain_version }}.zip" -Force
+          Compress-Archive -Path ".\dist-release-${{ steps.version.outputs.plain_version }}\*" -DestinationPath ".\DPSVIEWER-release-${{ steps.version.outputs.plain_version }}.zip" -Force
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ steps.version.outputs.plain_version }}
+          path: |
+            .\dist-dev-${{ steps.version.outputs.plain_version }}
+            .\dist-release-${{ steps.version.outputs.plain_version }}
+            .\DPSVIEWER-dev-${{ steps.version.outputs.plain_version }}.zip
+            .\DPSVIEWER-release-${{ steps.version.outputs.plain_version }}.zip
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          generate_release_notes: true
+          files: |
+            .\DPSVIEWER-release-${{ steps.version.outputs.plain_version }}.zip
