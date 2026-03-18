@@ -147,6 +147,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -170,7 +171,7 @@
                                 <TextBlock Margin="7,3,0,0"
                                            Foreground="#AFC7E9"
                                            FontSize="10"
-                                           Text="V4.0.16" />
+                                           Text="V4.0.32" />
                                 <Border Margin="10,0,0,0"
                                         Padding="8,2"
                                         Background="#24152131"
@@ -260,6 +261,13 @@
                     </Border>
 
                     <Border Grid.Row="2"
+                            Visibility="Collapsed"
+                            Margin="0"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderThickness="0" />
+
+                    <Border Grid.Row="3"
                             Margin="10,10,10,8"
                             Padding="8"
                             Background="#9918212F"
@@ -317,6 +325,16 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
+                                            <ProgressBar Grid.ColumnSpan="2"
+                                                         Margin="-8"
+                                                         Maximum="1"
+                                                         Minimum="0"
+                                                         Value="{Binding PartyShareRatio}"
+                                                         Foreground="#7A2FC8"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Opacity="0.34"
+                                                         IsHitTestVisible="False" />
 
                                             <Grid Width="34" Height="34" VerticalAlignment="Top">
                                                 <Border Background="#213551"
@@ -360,102 +378,118 @@
                                                 </Grid>
                                             </Grid>
 
-                                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                                <DockPanel LastChildFill="False">
-                                                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                                                        <TextBlock Foreground="White"
-                                                                   FontSize="13"
-                                                                   FontWeight="SemiBold"
-                                                                   Text="{Binding DisplayName}" />
-                                                        <TextBlock Margin="6,1,0,0"
-                                                                   Foreground="#D7C9FF"
-                                                                   FontSize="10"
-                                                                   Text="{Binding CompactServerLabel}" />
-                                                    </StackPanel>
-                                                    <WrapPanel DockPanel.Dock="Right">
-                                                        <Border Style="{StaticResource InfoChip}" Background="#37537F">
-                                                            <TextBlock Foreground="#C6DAFF"
-                                                                       FontSize="10"
-                                                                       Text="{Binding CombatScore, StringFormat=아툴 {0:N0}}" />
-                                                        </Border>
-                                                    </WrapPanel>
-                                                </DockPanel>
+                                            <Grid Grid.Column="1" Margin="10,0,0,0">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
 
-                                                <Grid Margin="0,5,0,0">
-                                                    <WrapPanel VerticalAlignment="Center">
-                                                        <WrapPanel.Style>
-                                                            <Style TargetType="WrapPanel">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </WrapPanel.Style>
-                                                        <Border Style="{StaticResource InfoChip}" Background="#274B72">
-                                                            <TextBlock Foreground="#8ED6FF" FontSize="10" FontWeight="SemiBold" Text="{Binding Dps, StringFormat=DPS {0:N0}}" />
-                                                        </Border>
-                                                        <Border Style="{StaticResource InfoChip}" Background="#6A5821">
-                                                            <TextBlock Foreground="#FFD96A" FontSize="10" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat=누적 {0:N0}}" />
-                                                        </Border>
-                                                        <Border Style="{StaticResource InfoChip}" Background="#5A2F6D">
-                                                            <TextBlock Foreground="#F2C2FF" FontSize="10" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat=지분 {0:P0}}" />
-                                                        </Border>
-                                                        <Border Style="{StaticResource InfoChip}" Background="#275042">
-                                                            <TextBlock Foreground="#A5F5CA" FontSize="10" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat=치명 {0:P0}}" />
-                                                        </Border>
-                                                    </WrapPanel>
-
-                                                    <Grid VerticalAlignment="Center">
-                                                        <Grid.Style>
-                                                            <Style TargetType="Grid">
-                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsCompactMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Grid.Style>
+                                                <Grid Grid.Row="0">
+                                                    <Grid>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
                                                         </Grid.ColumnDefinitions>
 
-                                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                                            <DockPanel LastChildFill="False">
-                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="DPS" />
-                                                                <TextBlock DockPanel.Dock="Right" Foreground="#8ED6FF" FontSize="9" FontWeight="SemiBold" Text="{Binding Dps, StringFormat={}{0:N0}}" />
-                                                            </DockPanel>
-                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding DpsRatio}" Foreground="#64BEFF" Background="#24344D" />
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                            <TextBlock Foreground="White"
+                                                                       FontSize="13"
+                                                                       FontWeight="SemiBold"
+                                                                       Text="{Binding DisplayName}" />
+                                                            <TextBlock Margin="6,1,0,0"
+                                                                       Foreground="#D7C9FF"
+                                                                       FontSize="10"
+                                                                       Text="{Binding CompactServerLabel}" />
+                                                            <Border Margin="6,0,0,0"
+                                                                    Padding="5,1"
+                                                                    Background="#30556E"
+                                                                    BorderBrush="#79BBFF"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="7">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsPartyCandidate}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
+                                                                <TextBlock Foreground="#D6EEFF"
+                                                                           FontSize="9"
+                                                                           FontWeight="SemiBold"
+                                                                           Text="PARTY" />
+                                                            </Border>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
-                                                            <DockPanel LastChildFill="False">
-                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="누적" />
-                                                                <TextBlock DockPanel.Dock="Right" Foreground="#FFD96A" FontSize="9" FontWeight="SemiBold" Text="{Binding TotalDamage, StringFormat={}{0:N0}}" />
-                                                            </DockPanel>
-                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding TotalDamageRatio}" Foreground="#F0C54C" Background="#3A321F" />
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="2" Margin="0,0,8,0">
-                                                            <DockPanel LastChildFill="False">
-                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="지분" />
-                                                                <TextBlock DockPanel.Dock="Right" Foreground="#F2C2FF" FontSize="9" FontWeight="SemiBold" Text="{Binding PartyShareRatio, StringFormat={}{0:P0}}" />
-                                                            </DockPanel>
-                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding PartyShareRatio}" Foreground="#B561E9" Background="#362444" />
-                                                        </StackPanel>
-                                                        <StackPanel Grid.Column="3">
-                                                            <DockPanel LastChildFill="False">
-                                                                <TextBlock DockPanel.Dock="Left" Foreground="#AFC7E9" FontSize="9" Text="치명" />
-                                                                <TextBlock DockPanel.Dock="Right" Foreground="#A5F5CA" FontSize="9" FontWeight="SemiBold" Text="{Binding CritRate, StringFormat={}{0:P0}}" />
-                                                            </DockPanel>
-                                                            <ProgressBar Height="7" Margin="0,2,0,0" Maximum="1" Value="{Binding CritRate}" Foreground="#75E7A2" Background="#1F3D30" />
+
+                                                        <StackPanel Grid.Column="1"
+                                                                    Orientation="Horizontal"
+                                                                    VerticalAlignment="Center"
+                                                                    Margin="10,0,0,0">
+                                                            <TextBlock Margin="0,0,10,0"
+                                                                       Foreground="#F0C0FF"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Text="{Binding PartyShareRatio, StringFormat={}{0:P0}}" />
+                                                            <TextBlock Foreground="#FFD96A"
+                                                                       FontSize="15"
+                                                                       FontWeight="Bold"
+                                                                       Text="{Binding TotalDamage, StringFormat={}{0:N0}}" />
                                                         </StackPanel>
                                                     </Grid>
                                                 </Grid>
-                                            </StackPanel>
+
+                                                <Grid Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Border Grid.Column="0" Margin="0,0,8,0" Padding="8,4" CornerRadius="9" Background="#21344B" BorderBrush="#3B5578" BorderThickness="1">
+                                                        <DockPanel LastChildFill="False">
+                                                            <TextBlock DockPanel.Dock="Left"
+                                                                       Foreground="#AFC7E9"
+                                                                       FontSize="10"
+                                                                       Text="DPS" />
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Foreground="#8ED6FF"
+                                                                       FontSize="12"
+                                                                       FontWeight="Bold"
+                                                                       Text="{Binding Dps, StringFormat={}{0:N0}}" />
+                                                        </DockPanel>
+                                                    </Border>
+
+                                                    <Border Grid.Column="1" Margin="0,0,8,0" Padding="8,4" CornerRadius="9" Background="#1F3D30" BorderBrush="#4C7C62" BorderThickness="1">
+                                                        <DockPanel LastChildFill="False">
+                                                            <TextBlock DockPanel.Dock="Left"
+                                                                       Foreground="#AFC7E9"
+                                                                       FontSize="10"
+                                                                       Text="치명" />
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Foreground="#A5F5CA"
+                                                                       FontSize="12"
+                                                                       FontWeight="Bold"
+                                                                       Text="{Binding CritRate, StringFormat={}{0:P0}}" />
+                                                        </DockPanel>
+                                                    </Border>
+
+                                                    <Border Grid.Column="2" Padding="8,4" CornerRadius="9" Background="#3C2B1D" BorderBrush="#876242" BorderThickness="1">
+                                                        <DockPanel LastChildFill="False">
+                                                            <TextBlock DockPanel.Dock="Left"
+                                                                       Foreground="#AFC7E9"
+                                                                       FontSize="10"
+                                                                       Text="강타" />
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Foreground="#F4B47E"
+                                                                       FontSize="12"
+                                                                       FontWeight="Bold"
+                                                                       Text="{Binding DoubleRate, StringFormat={}{0:P0}}" />
+                                                        </DockPanel>
+                                                    </Border>
+                                                </Grid>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -463,7 +497,7 @@
                         </ListView>
                     </Border>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="4"
                             Margin="10,0,10,10"
                             Padding="6,4"
                             Background="#64152030"

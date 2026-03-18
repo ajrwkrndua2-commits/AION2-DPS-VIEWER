@@ -1,8 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Aion2Dashboard.Infrastructure;
 using Aion2Dashboard.Models;
 using Aion2Dashboard.Services;
@@ -21,10 +23,13 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private readonly UpdateInstallerService _updateInstallerService;
     private readonly LogUploadService _logUploadService;
     private readonly CombatRecordStore _combatRecordStore;
+    private readonly DpsSnapshotLogStore _dpsSnapshotLogStore;
     private readonly bool _isDistributionBuild;
     private readonly Dictionary<int, DpsPlayerRow> _rowsByActorId = new();
     private readonly Dictionary<string, DpsPlayerRow> _rowsByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, CharacterProfile> _profileCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<int, DetectedCharacterInfo> _detectedCharactersByActorId = new();
+    private readonly Dictionary<int, PartyMemberCard> _partyApplicantCardsByActorId = new();
     private readonly HashSet<string> _pendingProfileKeys = new(StringComparer.OrdinalIgnoreCase);
     private readonly string[] _raceOptions = ["천족", "마족"];
 
@@ -49,6 +54,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private int _combatRecordRetentionSeconds = 1800;
     private bool _bossOnlyMode;
     private bool _partyPacketLoggingEnabled;
+    private bool _dpsSnapshotLoggingEnabled;
+    private bool _strongHitAnalysisLoggingEnabled;
     private bool _isCompactMode;
     private bool _autoUpdateCheckEnabled = true;
     private string _logUploadUrl = string.Empty;
@@ -56,6 +63,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _currentTargetName = "타겟 대기 중";
     private string _currentTargetHealthText = string.Empty;
     private bool _isBossTarget;
+    private TargetInfo? _currentTargetInfo;
     private DpsPlayerRow? _pinnedSearchPlayer;
     private DateTime _pinnedSearchSetUtc = DateTime.MinValue;
     private bool _isAdBannerVisible;
@@ -64,8 +72,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _adDescription = string.Empty;
     private string _adButtonText = "열기";
     private string _adUrl = string.Empty;
+    private bool _hasUpdateNotification;
+    private string _updateButtonToolTip = "업데이트";
     private string _lastSavedCombatRecordKey = string.Empty;
     private const int CombatRecordSaveDelayMilliseconds = 1500;
+    private DateTime _lastSnapshotLogUtc = DateTime.MinValue;
+    private int _isUploadingLogs;
+    private DateTime _lastDetectionSignalUtc = DateTime.MinValue;
+    private readonly DispatcherTimer _detectionStateTimer;
 
     public MainViewModel(
         AtoolApiClient atoolApiClient,
@@ -81,6 +95,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _updateInstallerService = new UpdateInstallerService();
         _logUploadService = new LogUploadService();
         _combatRecordStore = new CombatRecordStore();
+        _dpsSnapshotLogStore = new DpsSnapshotLogStore();
         _isDistributionBuild = isDistributionBuild;
 
         SearchCommand = new AsyncRelayCommand(SearchAsync, CanSearch);
@@ -95,18 +110,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         LoadAdBanner();
         ApplyMeterOptions();
 
+        _detectionStateTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _detectionStateTimer.Tick += (_, _) =>
+        {
+            RaisePropertyChanged(nameof(DetectionStatus));
+            RaisePropertyChanged(nameof(DetectionIndicatorBrush));
+        };
+        _detectionStateTimer.Start();
+
         _dpsMeterService.SnapshotUpdated += OnSnapshotUpdated;
         _dpsMeterService.StatusChanged += OnMeterStatusChanged;
         _dpsMeterService.CharacterDetected += OnCharacterDetected;
         _dpsMeterService.TargetChanged += OnTargetChanged;
         _dpsMeterService.ResetSuggested += OnResetSuggested;
         _dpsMeterService.CombatRecordCompleted += OnCombatRecordCompleted;
+        PartyApplicants.CollectionChanged += OnPartyApplicantsChanged;
     }
 
     public ObservableCollection<ServerOption> Servers { get; } = [];
     public ObservableCollection<ServerOption> FilteredServers { get; } = [];
     public ObservableCollection<DpsPlayerRow> LivePlayers { get; } = [];
     public ObservableCollection<DpsPlayerRow> DisplayPlayers { get; } = [];
+    public ObservableCollection<PartyMemberCard> PartyApplicants { get; } = [];
 
     public AsyncRelayCommand SearchCommand { get; }
     public AsyncRelayCommand RefreshServersCommand { get; }
@@ -115,6 +143,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public RelayCommand ResetMeterCommand { get; }
     public RelayCommand ResetAllCommand { get; }
     public RelayCommand OpenAdLinkCommand { get; }
+    public bool HasPartyApplicants => PartyApplicants.Count > 0;
 
     public ServerOption? SelectedServer
     {
@@ -173,10 +202,67 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public string DetectionStatus => _dpsMeterService.IsRunning ? "감지 중" : "대기 중";
+    public string DetectionStatus
+    {
+        get
+        {
+            if (!_dpsMeterService.IsRunning || CombatPort <= 0)
+            {
+                return "감지 안됨";
+            }
+
+            if (_lastDetectionSignalUtc == DateTime.MinValue)
+            {
+                return "감지 지연";
+            }
+
+            return DateTime.UtcNow - _lastDetectionSignalUtc <= TimeSpan.FromSeconds(5)
+                ? "감지중"
+                : "감지 지연";
+        }
+    }
+
+    public Brush DetectionIndicatorBrush => DetectionStatus switch
+    {
+        "감지중" => new SolidColorBrush(Color.FromRgb(102, 224, 147)),
+        "감지 지연" => new SolidColorBrush(Color.FromRgb(255, 201, 87)),
+        _ => new SolidColorBrush(Color.FromRgb(255, 101, 101))
+    };
     public long TotalPartyDps => LivePlayers.Sum(row => row.Dps);
     public string MeterModeText => BossOnlyMode ? "보스만" : "전체";
     public bool ShowPartyLoggingSetting => !_isDistributionBuild;
+    public bool DpsSnapshotLoggingEnabled
+    {
+        get => _dpsSnapshotLoggingEnabled;
+        set
+        {
+            if (SetProperty(ref _dpsSnapshotLoggingEnabled, value))
+            {
+                SaveSettings();
+                if (value)
+                {
+                    StatusText = $"DPS 로그 저장 활성화: {_dpsSnapshotLogStore.DirectoryPath}";
+                }
+            }
+        }
+    }
+
+    public bool StrongHitAnalysisLoggingEnabled
+    {
+        get => _strongHitAnalysisLoggingEnabled;
+        set
+        {
+            if (SetProperty(ref _strongHitAnalysisLoggingEnabled, value))
+            {
+                ApplyMeterOptions();
+                SaveSettings();
+                if (value)
+                {
+                    StatusText = "DOUBLE 분석 로그 저장 활성화: logs/strong-hit-analysis-YYYYMMDD.csv";
+                }
+            }
+        }
+    }
     public bool IsAdBannerVisible
     {
         get => _isAdBannerVisible;
@@ -393,6 +479,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    public bool HasUpdateNotification
+    {
+        get => _hasUpdateNotification;
+        set => SetProperty(ref _hasUpdateNotification, value);
+    }
+
+    public string UpdateButtonToolTip
+    {
+        get => _updateButtonToolTip;
+        set => SetProperty(ref _updateButtonToolTip, value);
+    }
+
     public int CombatRecordRetentionSeconds
     {
         get => _combatRecordRetentionSeconds;
@@ -602,6 +700,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var result = await _updateCheckerService.CheckForUpdateAsync();
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                HasUpdateNotification = result.IsUpdateAvailable;
+                UpdateButtonToolTip = result.IsUpdateAvailable
+                    ? $"새 버전 {result.LatestVersion}"
+                    : "업데이트";
                 StatusText = result.Message;
             });
 
@@ -664,6 +766,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             var result = await _updateCheckerService.CheckForUpdateAsync();
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                HasUpdateNotification = result.IsUpdateAvailable;
+                UpdateButtonToolTip = result.IsUpdateAvailable
+                    ? $"새 버전 {result.LatestVersion}"
+                    : "업데이트";
                 StatusText = result.Message;
             });
 
@@ -831,6 +937,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _detectionStateTimer.Stop();
+        PartyApplicants.CollectionChanged -= OnPartyApplicantsChanged;
         SaveCombatRecordIfAvailable("프로그램 종료");
         _dpsMeterService.SnapshotUpdated -= OnSnapshotUpdated;
         _dpsMeterService.StatusChanged -= OnMeterStatusChanged;
@@ -893,11 +1001,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var (nickname, parsedServerName) = ParseSearchInput(payload.Name);
-        if (string.IsNullOrWhiteSpace(nickname))
+        var runtimeName = ParseRuntimeEntityName(payload.Name);
+        if (string.IsNullOrWhiteSpace(runtimeName.DisplayName))
         {
             return;
         }
+
+        await Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var resolvedServerName = !string.IsNullOrWhiteSpace(runtimeName.ServerName)
+                ? runtimeName.ServerName
+                : TryResolveServerName(payload.ServerId) ?? string.Empty;
+            _detectedCharactersByActorId[payload.ActorId] = new DetectedCharacterInfo(
+                runtimeName.DisplayName,
+                payload.ServerId,
+                resolvedServerName,
+                payload.JobCode);
+        });
 
         var hasVisibleRow = payload.ActorId > 0 && _rowsByActorId.ContainsKey(payload.ActorId);
         if (!hasVisibleRow && !_dpsMeterService.HasRecentDamage(payload.ActorId))
@@ -906,20 +1026,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
 
         DpsPlayerRow? row = null;
-        CharacterProfile? cached = null;
-
         await Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            row = GetOrCreateRow(payload.ActorId, nickname);
-            row.Name = nickname;
+            row = GetOrCreateRow(payload.ActorId, runtimeName.DisplayName);
+            row.Name = runtimeName.DisplayName;
+            row.IsConfirmedIdentity = true;
+            row.ServerId = payload.ServerId;
+            ApplyDetectedJob(row, payload.JobCode);
             TryMarkSelf(row, payload.ActorId);
 
-            if (!string.IsNullOrWhiteSpace(parsedServerName))
+            if (!string.IsNullOrWhiteSpace(runtimeName.ServerName))
             {
-                row.Server = parsedServerName;
+                row.Server = runtimeName.ServerName;
             }
-
-            _profileCache.TryGetValue(GetProfileKey(nickname, row.Server), out cached);
+            else if (payload.ServerId > 0)
+            {
+                row.Server = TryResolveServerName(payload.ServerId) ?? row.Server;
+            }
         });
 
         if (row is null)
@@ -927,34 +1050,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (cached is not null)
-        {
-            await Application.Current.Dispatcher.InvokeAsync(() => ApplyProfile(row, cached));
-            return;
-        }
-
-        try
-        {
-            var profile = await ResolveProfileAsync(nickname, payload.ServerId, string.IsNullOrWhiteSpace(parsedServerName) ? row.Server : parsedServerName);
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                ApplyProfile(row, profile);
-                _profileCache[GetProfileKey(profile.Nickname, profile.Server)] = profile;
-                StatusText = $"{profile.Nickname} 자동 조회 완료";
-                ReorderRows();
-            });
-        }
-        catch
-        {
-            await Application.Current.Dispatcher.InvokeAsync(() => TryQueueProfileLookup(row));
-        }
+        await Application.Current.Dispatcher.InvokeAsync(ReorderRows);
     }
 
     private void OnSnapshotUpdated(object? sender, IReadOnlyList<DpsEntry> entries)
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
+            _lastDetectionSignalUtc = DateTime.UtcNow;
             CombatPort = _dpsMeterService.CombatPort;
+            var partyActorIds = _dpsMeterService.PartyCandidateActorIds.ToHashSet();
             var activeActorIds = entries.Select(entry => entry.ActorId).Where(id => id > 0).ToHashSet();
             if (entries.Count > 0)
             {
@@ -966,6 +1071,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 row.Dps = 0;
                 row.TotalDamage = 0;
                 row.CritRate = 0;
+                row.DoubleRate = 0;
                 row.HitCount = 0;
                 row.PartyShareRatio = 0;
                 row.IsPartyCandidate = false;
@@ -973,30 +1079,31 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
             foreach (var entry in entries)
             {
-                var (nickname, parsedServerName) = ParseSearchInput(entry.Name);
-                var normalizedName = string.IsNullOrWhiteSpace(nickname) ? entry.Name : nickname;
+                var runtimeName = ParseRuntimeEntityName(entry.Name);
+                var normalizedName = string.IsNullOrWhiteSpace(runtimeName.DisplayName) ? entry.Name : runtimeName.DisplayName;
                 var row = GetOrCreateRow(entry.ActorId, normalizedName);
 
-                if (ShouldReplaceName(row.Name, normalizedName))
+                if ((!runtimeName.IsOwnerDerived || !row.IsConfirmedIdentity) && ShouldReplaceName(row.Name, normalizedName))
                 {
                     row.Name = normalizedName;
                 }
 
                 TryMarkSelf(row, entry.ActorId);
 
-                if (!string.IsNullOrWhiteSpace(parsedServerName))
+                if (!string.IsNullOrWhiteSpace(runtimeName.ServerName))
                 {
-                    row.Server = parsedServerName;
+                    row.Server = runtimeName.ServerName;
+                    row.ServerId = TryResolveServerId(runtimeName.ServerName) ?? row.ServerId;
                 }
 
                 row.Dps = entry.Dps;
                 row.TotalDamage = entry.TotalDamage;
                 row.CritRate = entry.CritRate;
+                row.DoubleRate = entry.DoubleRate;
                 row.HitCount = entry.HitCount;
-                row.IsPartyCandidate = entry.IsPartyCandidate;
+                row.IsPartyCandidate = entry.IsPartyCandidate || partyActorIds.Contains(entry.ActorId);
                 row.PartyShareRatio = entry.PartyShareRatio;
 
-                TryQueueProfileLookup(row);
             }
 
             if (!_preserveRowsAfterMeterReset || activeActorIds.Count > 0)
@@ -1008,6 +1115,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             ApplyPartyHints();
             ReorderRows();
             RaisePropertyChanged(nameof(TotalPartyDps));
+            RaisePropertyChanged(nameof(DetectionStatus));
+            RaisePropertyChanged(nameof(DetectionIndicatorBrush));
+
+            TryAppendDpsSnapshotLog();
         });
     }
 
@@ -1015,9 +1126,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
+            _lastDetectionSignalUtc = DateTime.UtcNow;
             CombatPort = _dpsMeterService.CombatPort;
             StatusText = message;
             RaisePropertyChanged(nameof(DetectionStatus));
+            RaisePropertyChanged(nameof(DetectionIndicatorBrush));
         });
     }
 
@@ -1025,9 +1138,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         Application.Current.Dispatcher.Invoke(() =>
         {
+            _currentTargetInfo = target;
             CurrentTargetName = target?.Name ?? "타겟 대기 중";
             IsBossTarget = target?.IsBoss == true;
             CurrentTargetHealthText = FormatTargetHealth(target);
+            ApplyPartyHints();
+            ReorderRows();
         });
     }
 
@@ -1046,7 +1162,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             EnrichCombatRecord(record, _rowsByActorId.ToDictionary(
                 pair => pair.Key,
-                pair => ParticipantSnapshot.FromRow(pair.Value)), CurrentTargetName);
+                pair => ParticipantSnapshot.FromRow(pair.Value)), _currentTargetInfo);
             SaveCombatRecordCore(record);
         });
     }
@@ -1082,6 +1198,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             row.Dps = 0;
             row.TotalDamage = 0;
             row.CritRate = 0;
+            row.DoubleRate = 0;
             row.HitCount = 0;
             row.PartyShareRatio = 0;
         }
@@ -1094,6 +1211,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         CurrentTargetName = "타겟 대기 중";
         CurrentTargetHealthText = string.Empty;
+        _currentTargetInfo = null;
         IsBossTarget = false;
         StatusText = "DPS 데이터만 초기화했습니다. 이름과 아툴 정보는 유지됩니다.";
         RaisePropertyChanged(nameof(TotalPartyDps));
@@ -1109,12 +1227,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _rowsByActorId.Clear();
         _rowsByName.Clear();
         _profileCache.Clear();
+        _detectedCharactersByActorId.Clear();
+        _partyApplicantCardsByActorId.Clear();
         _pendingProfileKeys.Clear();
         LivePlayers.Clear();
         DisplayPlayers.Clear();
+        PartyApplicants.Clear();
         _selfActorId = 0;
         CurrentTargetName = "타겟 대기 중";
         CurrentTargetHealthText = string.Empty;
+        _currentTargetInfo = null;
         IsBossTarget = false;
         StatusText = "전체 리셋을 완료했습니다. DPS 목록과 자동 조회 캐시를 모두 비웠습니다.";
         PinnedSearchPlayer = null;
@@ -1137,6 +1259,16 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (actorId > 0)
             {
+                goto CreateNewRow;
+            }
+
+            if (byName.ActorId > 0 && actorId > 0 && byName.ActorId != actorId)
+            {
+                goto CreateNewRow;
+            }
+
+            if (actorId > 0)
+            {
                 byName.ActorId = actorId;
                 _rowsByActorId[actorId] = byName;
             }
@@ -1144,6 +1276,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             return byName;
         }
 
+CreateNewRow:
         var row = new DpsPlayerRow
         {
             ActorId = actorId,
@@ -1235,54 +1368,67 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private static void ApplyProfile(DpsPlayerRow row, CharacterProfile profile)
     {
-        row.Name = profile.Nickname;
-        row.Job = profile.Job;
-        row.JobImageUrl = profile.JobImageUrl;
-        row.Server = profile.Server;
+        if (!string.IsNullOrWhiteSpace(profile.Nickname))
+        {
+            row.Name = profile.Nickname;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.Job) &&
+            !string.Equals(profile.Job, "미확인", StringComparison.OrdinalIgnoreCase))
+        {
+            row.Job = profile.Job;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.JobImageUrl))
+        {
+            row.JobImageUrl = profile.JobImageUrl;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.Server))
+        {
+            row.Server = profile.Server;
+        }
+
+        row.ServerId = 0;
         row.CombatScore = profile.CombatScore;
         row.MajorTitles = profile.MajorTitles.Take(3).Select(ShortTitle).ToArray();
         row.MajorStigmas = profile.MajorStigmas.Take(4).ToArray();
+        row.IsConfirmedIdentity = true;
+    }
+
+    private static void ApplyProfile(PartyMemberCard card, CharacterProfile profile)
+    {
+        card.Nickname = profile.Nickname;
+        card.Server = profile.Server;
+
+        if (!string.IsNullOrWhiteSpace(profile.Job))
+        {
+            card.Job = profile.Job;
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.JobImageUrl))
+        {
+            card.JobImageUrl = profile.JobImageUrl;
+        }
+
+        card.CombatScore = profile.CombatScore;
+        card.MajorTitles.Clear();
+        foreach (var title in profile.MajorTitles.Take(3).Select(ShortTitle))
+        {
+            card.MajorTitles.Add(title);
+        }
+
+        card.MajorStigmas.Clear();
+        foreach (var stigma in profile.MajorStigmas.Take(4))
+        {
+            card.MajorStigmas.Add(stigma);
+        }
     }
 
     private static string ShortTitle(string value)
     {
         var text = value?.Trim() ?? string.Empty;
         return text.Length <= 4 ? text : text[..4];
-    }
-
-    private void TryQueueProfileLookup(DpsPlayerRow row)
-    {
-        if (string.IsNullOrWhiteSpace(row.Name) || row.Name.StartsWith("#", StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        var profileKey = GetProfileKey(row.Name, row.Server);
-        if (_profileCache.ContainsKey(profileKey) || !_pendingProfileKeys.Add(profileKey))
-        {
-            return;
-        }
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var profile = await ResolveProfileAsync(row.Name, 0, row.Server);
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    ApplyProfile(row, profile);
-                    _profileCache[GetProfileKey(profile.Nickname, profile.Server)] = profile;
-                    ReorderRows();
-                });
-            }
-            catch
-            {
-            }
-            finally
-            {
-                await Application.Current.Dispatcher.InvokeAsync(() => _pendingProfileKeys.Remove(profileKey));
-            }
-        });
     }
 
     private void ReorderRows()
@@ -1325,6 +1471,12 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void RefreshPartyApplicantCards()
+    {
+        _partyApplicantCardsByActorId.Clear();
+        PartyApplicants.Clear();
+    }
+
     private static string FormatTargetHealth(TargetInfo? target)
     {
         if (target is null)
@@ -1347,43 +1499,57 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void ApplyPartyHints()
     {
+        var partyActorIds = _dpsMeterService.PartyCandidateActorIds.ToHashSet();
+        foreach (var row in LivePlayers)
+        {
+            row.IsPartyCandidate = partyActorIds.Contains(row.ActorId);
+        }
+
         var selfRow = LivePlayers.FirstOrDefault(row => row.IsSelf);
         var desiredPartyCount = selfRow is null ? 0 : 1;
         desiredPartyCount += Math.Clamp(_dpsMeterService.PartySlotHintCount, 0, 3);
-
-        var partyRows = LivePlayers
-            .Where(row => row.IsSelf || row.IsPartyCandidate)
-            .OrderByDescending(row => row.TotalDamage)
-            .ToList();
-
-        if (desiredPartyCount > 0 && partyRows.Count < desiredPartyCount)
+        if (partyActorIds.Count > 0)
         {
-            var fillRows = LivePlayers
-                .Where(row => !row.IsSelf && !row.IsPartyCandidate && row.IsResolvedName)
+            desiredPartyCount = Math.Max(desiredPartyCount, Math.Min(4, partyActorIds.Count + (selfRow is null ? 0 : 1)));
+        }
+
+        if (desiredPartyCount > 0)
+        {
+            var inferredPartyRows = LivePlayers
+                .Where(row => row.IsSelf || row.IsPartyCandidate)
                 .OrderByDescending(row => row.TotalDamage)
-                .ThenByDescending(row => row.Dps)
-                .Take(desiredPartyCount - partyRows.Count)
                 .ToList();
 
-            foreach (var row in fillRows)
+            if (inferredPartyRows.Count < desiredPartyCount)
             {
-                row.IsPartyCandidate = true;
-                partyRows.Add(row);
+                var fillRows = LivePlayers
+                    .Where(row => !row.IsSelf && !row.IsPartyCandidate && row.IsResolvedName)
+                    .OrderByDescending(row => row.TotalDamage)
+                    .ThenByDescending(row => row.Dps)
+                    .Take(desiredPartyCount - inferredPartyRows.Count)
+                    .ToList();
+
+                foreach (var row in fillRows)
+                {
+                    row.IsPartyCandidate = true;
+                }
             }
         }
 
-        var limitedPartyRows = partyRows
-            .OrderByDescending(row => row.IsSelf)
-            .ThenByDescending(row => row.TotalDamage)
-            .Take(4)
-            .ToList();
+        var targetMaxHp = _currentTargetInfo?.MaxHp ?? 0;
+        var targetDamageTaken = _currentTargetInfo?.DamageTaken ?? 0;
+        var visibleDamage = Math.Max(1L, LivePlayers.Sum(row => row.TotalDamage));
+        var contributionBase = targetMaxHp > 0
+            ? targetMaxHp
+            : targetDamageTaken > 0
+                ? Math.Max(targetDamageTaken, visibleDamage)
+                : visibleDamage;
 
-        var totalPartyDamage = Math.Max(1L, limitedPartyRows.Sum(row => row.TotalDamage));
         foreach (var row in LivePlayers)
         {
-            row.PartyShareRatio = limitedPartyRows.Contains(row)
-                ? (double)row.TotalDamage / totalPartyDamage
-                : 0;
+            row.PartyShareRatio = row.TotalDamage <= 0
+                ? 0
+                : Math.Min(1.0, (double)row.TotalDamage / contributionBase);
         }
     }
 
@@ -1394,6 +1560,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _dpsMeterService.ActiveDisplaySeconds = ActiveDisplaySeconds;
         _dpsMeterService.BossOnlyMode = BossOnlyMode;
         _dpsMeterService.EnablePartyPacketLogging = PartyPacketLoggingEnabled;
+        _dpsMeterService.EnableStrongHitAnalysisLogging = !_isDistributionBuild && StrongHitAnalysisLoggingEnabled;
         RaisePropertyChanged(nameof(MeterModeText));
     }
 
@@ -1456,7 +1623,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     private void SaveCombatRecordIfAvailable(string reason)
     {
-        var record = _dpsMeterService.CaptureCombatRecord(reason);
+        CombatRecord? record;
+        try
+        {
+            record = _dpsMeterService.CaptureCombatRecord(reason);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"전투 기록 저장 중 오류: {ex.Message}";
+            return;
+        }
+
         if (record is null || record.TotalDamage <= 0 || record.Participants.Count == 0)
         {
             return;
@@ -1465,40 +1642,53 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         var rowSnapshots = _rowsByActorId.ToDictionary(
             pair => pair.Key,
             pair => ParticipantSnapshot.FromRow(pair.Value));
-        var currentTargetNameSnapshot = CurrentTargetName;
+        var currentTargetSnapshot = _currentTargetInfo;
         _ = SaveCombatRecordAsync(
             record,
             reason,
             rowSnapshots,
-            currentTargetNameSnapshot);
+            currentTargetSnapshot);
     }
 
     private async Task SaveCombatRecordAsync(
         CombatRecord record,
         string reason,
         IReadOnlyDictionary<int, ParticipantSnapshot> rowSnapshots,
-        string currentTargetNameSnapshot)
+        TargetInfo? currentTargetSnapshot)
     {
-        if (!string.Equals(reason, "프로그램 종료", StringComparison.Ordinal))
+        try
         {
-            await Task.Delay(CombatRecordSaveDelayMilliseconds);
-        }
+            if (!string.Equals(reason, "프로그램 종료", StringComparison.Ordinal))
+            {
+                await Task.Delay(CombatRecordSaveDelayMilliseconds);
+            }
 
-        EnrichCombatRecord(record, rowSnapshots, currentTargetNameSnapshot);
-        SaveCombatRecordCore(record);
+            EnrichCombatRecord(record, rowSnapshots, currentTargetSnapshot);
+            SaveCombatRecordCore(record);
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"전투 기록 후처리 중 오류: {ex.Message}";
+        }
     }
 
     private void EnrichCombatRecord(
         CombatRecord record,
         IReadOnlyDictionary<int, ParticipantSnapshot> rowSnapshots,
-        string currentTargetNameSnapshot)
+        TargetInfo? currentTargetSnapshot)
     {
-        if (IsPlaceholderTarget(record.TargetName) && !string.IsNullOrWhiteSpace(currentTargetNameSnapshot) && currentTargetNameSnapshot != "타겟 대기 중")
+        if (IsPlaceholderTarget(record.TargetName)
+            && currentTargetSnapshot is not null
+            && currentTargetSnapshot.TargetId > 0
+            && (record.TargetId <= 0 || currentTargetSnapshot.TargetId == record.TargetId)
+            && !IsPlaceholderTarget(currentTargetSnapshot.Name))
         {
-            record.TargetName = currentTargetNameSnapshot;
+            record.TargetId = currentTargetSnapshot.TargetId;
+            record.TargetName = currentTargetSnapshot.Name;
+            record.IsBossTarget = currentTargetSnapshot.IsBoss;
         }
 
-        var totalDamage = Math.Max(1L, record.Participants.Sum(item => item.TotalDamage));
+        var totalDamage = Math.Max(1L, record.TotalDamage > 0 ? record.TotalDamage : record.Participants.Sum(item => item.TotalDamage));
         foreach (var participant in record.Participants)
         {
             participant.PartyShareRatio = (double)participant.TotalDamage / totalDamage;
@@ -1620,13 +1810,14 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         return string.IsNullOrWhiteSpace(name)
             || name.StartsWith("#", StringComparison.Ordinal)
+            || string.Equals(name, "타겟 대기 중", StringComparison.Ordinal)
             || string.Equals(name, "타겟 확인중", StringComparison.Ordinal)
             || string.Equals(name, "타겟 미상", StringComparison.Ordinal);
     }
 
     private void SaveCombatRecordCore(CombatRecord record)
     {
-        var recordKey = $"{record.EndedAtUtc.Ticks}:{record.TotalDamage}:{record.TargetName}";
+        var recordKey = record.Id;
         if (string.Equals(_lastSavedCombatRecordKey, recordKey, StringComparison.Ordinal))
         {
             return;
@@ -1681,6 +1872,121 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         return (value, null);
     }
 
+    private RuntimeEntityName ParseRuntimeEntityName(string input)
+    {
+        var value = input.Trim();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new RuntimeEntityName(value, null, false);
+        }
+
+        var bracketMatch = Regex.Match(value, @"^(?<name>.+?)\s*[\[\(](?<suffix>.+?)[\]\)]$");
+        if (!bracketMatch.Success)
+        {
+            return new RuntimeEntityName(value, null, false);
+        }
+
+        var name = bracketMatch.Groups["name"].Value.Trim();
+        var suffix = bracketMatch.Groups["suffix"].Value.Trim();
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(suffix))
+        {
+            return new RuntimeEntityName(value, null, false);
+        }
+
+        if (IsKnownServerName(suffix))
+        {
+            return new RuntimeEntityName(name, suffix, false);
+        }
+
+        if (IsLikelyOwnedEntityName(name))
+        {
+            return new RuntimeEntityName(suffix, null, true);
+        }
+
+        return new RuntimeEntityName(value, null, false);
+    }
+
+    private bool IsKnownServerName(string value)
+    {
+        return Servers.Any(server => string.Equals(server.Name, value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsLikelyOwnedEntityName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string[] keywords =
+        [
+            "소환", "정령", "분신", "환영", "덫", "함정", "토템", "기운", "결계", "구체",
+            "마법", "화살", "폭발", "사격", "표식", "장판", "파동", "타격", ":"
+        ];
+
+        return keywords.Any(keyword => value.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? TryResolveServerName(int serverId)
+    {
+        return Servers.FirstOrDefault(item => item.Id == serverId)?.Name;
+    }
+
+    private int? TryResolveServerId(string? serverName)
+    {
+        if (string.IsNullOrWhiteSpace(serverName))
+        {
+            return null;
+        }
+
+        return Servers.FirstOrDefault(item => string.Equals(item.Name, serverName, StringComparison.OrdinalIgnoreCase))?.Id;
+    }
+
+    private static void ApplyDetectedJob(DpsPlayerRow row, int jobCode)
+    {
+        row.JobCode = jobCode;
+        var (jobName, jobImageUrl) = ResolveJobInfo(jobCode);
+        if (!string.IsNullOrWhiteSpace(jobName) && (string.IsNullOrWhiteSpace(row.Job) || row.Job == "-" || row.Job == "미확인"))
+        {
+            row.Job = jobName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(jobImageUrl) && string.IsNullOrWhiteSpace(row.JobImageUrl))
+        {
+            row.JobImageUrl = jobImageUrl;
+        }
+    }
+
+    private static void ApplyDetectedJob(PartyMemberCard card, int jobCode)
+    {
+        var (jobName, jobImageUrl) = ResolveJobInfo(jobCode);
+        if (!string.IsNullOrWhiteSpace(jobName) && (string.IsNullOrWhiteSpace(card.Job) || card.Job == "-" || card.Job == "미확인"))
+        {
+            card.Job = jobName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(jobImageUrl) && string.IsNullOrWhiteSpace(card.JobImageUrl))
+        {
+            card.JobImageUrl = jobImageUrl;
+        }
+    }
+
+    private static (string JobName, string JobImageUrl) ResolveJobInfo(int jobCode)
+    {
+        return jobCode switch
+        {
+            0 => ("검성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_gladiator.png"),
+            1 => ("수호성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_templar.png"),
+            2 => ("살성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_assassin.png"),
+            3 => ("궁성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_ranger.png"),
+            4 => ("치유성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_cleric.png"),
+            5 => ("호법성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_chanter.png"),
+            6 => ("마도성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_sorcerer.png"),
+            7 => ("정령성", "https://assets.playnccdn.com/static-aion2/characters/img/class/class_icon_elementalist.png"),
+            _ => (string.Empty, string.Empty)
+        };
+    }
+
     private void LoadSettings()
     {
         var settings = _settingsStore.Load();
@@ -1705,6 +2011,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         _combatRecordRetentionSeconds = Math.Clamp(settings.CombatRecordRetentionSeconds, 60, 1800);
         _bossOnlyMode = settings.BossOnlyMode;
         _partyPacketLoggingEnabled = settings.PartyPacketLoggingEnabled;
+        _dpsSnapshotLoggingEnabled = settings.DpsSnapshotLoggingEnabled;
+        _strongHitAnalysisLoggingEnabled = _isDistributionBuild ? false : settings.StrongHitAnalysisLoggingEnabled;
         _isCompactMode = settings.CompactMode;
         _autoUpdateCheckEnabled = settings.AutoUpdateCheckEnabled;
         _logUploadUrl = string.IsNullOrWhiteSpace(settings.LogUploadUrl)
@@ -1732,14 +2040,54 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             CombatRecordRetentionSeconds = CombatRecordRetentionSeconds,
             BossOnlyMode = BossOnlyMode,
             PartyPacketLoggingEnabled = PartyPacketLoggingEnabled,
+            DpsSnapshotLoggingEnabled = DpsSnapshotLoggingEnabled,
+            StrongHitAnalysisLoggingEnabled = StrongHitAnalysisLoggingEnabled,
             CompactMode = IsCompactMode,
             AutoUpdateCheckEnabled = AutoUpdateCheckEnabled,
             LogUploadUrl = LogUploadUrl
         });
     }
 
+    private void TryAppendDpsSnapshotLog()
+    {
+        if (!DpsSnapshotLoggingEnabled || LivePlayers.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (_lastSnapshotLogUtc != DateTime.MinValue && (now - _lastSnapshotLogUtc).TotalMilliseconds < 900)
+        {
+            return;
+        }
+
+        _lastSnapshotLogUtc = now;
+        _dpsSnapshotLogStore.AppendSnapshot(
+            now,
+            GetSnapshotTargetName(),
+            IsBossTarget,
+            LivePlayers.Where(row => row.IsConfirmedIdentity && row.HitCount > 0 && (row.Dps > 0 || row.TotalDamage > 0)).ToArray());
+    }
+
+    private string GetSnapshotTargetName()
+    {
+        if (_currentTargetInfo is not null && !IsPlaceholderTarget(_currentTargetInfo.Name))
+        {
+            return _currentTargetInfo.Name;
+        }
+
+        return IsPlaceholderTarget(CurrentTargetName) ? "타겟 확인중" : CurrentTargetName;
+    }
+
+    private readonly record struct RuntimeEntityName(string DisplayName, string? ServerName, bool IsOwnerDerived);
+
     public async Task UploadLogsAsync()
     {
+        if (Interlocked.Exchange(ref _isUploadingLogs, 1) == 1)
+        {
+            return;
+        }
+
         try
         {
             StatusText = "로그 전송 준비 중...";
@@ -1765,6 +2113,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             });
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isUploadingLogs, 0);
         }
     }
 
@@ -1914,6 +2266,17 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         return new SolidColorBrush(Color.FromArgb((byte)(Math.Clamp(opacity, 0.0, 1.0) * 255), r, g, b));
     }
+
+    private void OnPartyApplicantsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        RaisePropertyChanged(nameof(HasPartyApplicants));
+    }
+
+    private sealed record DetectedCharacterInfo(
+        string Name,
+        int ServerId,
+        string ServerName,
+        int JobCode);
 }
 
 
